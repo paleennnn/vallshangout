@@ -11,6 +11,7 @@
     "vapid": "web-push generate-vapid-keys"
   },
   "dependencies": {
+    "@marsidev/react-turnstile": "^1.6.3",
     "@serwist/turbopack": "^9.5.13",
     "@supabase/supabase-js": "^2.119.0",
     "next": "^16.4.0",

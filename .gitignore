@@ -1,8 +1,82 @@
-node_modules
-.next
-out
+# Dependencies
+node_modules/
+.pnp/
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Next.js
+.next/
+out/
 next-env.d.ts
 *.tsbuildinfo
-.env*.local
+
+# Production builds
+/build
+/dist/
+
+# Environment variables (JANGAN COMMIT)
 .env
-.vercel
+.env.*
+!.env.example
+!.env.template
+
+# Vercel
+.vercel/
+
+# Supabase local development
+supabase/.temp/
+supabase/.branches/
+
+# Testing
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Cache
+.cache/
+.turbo/
+.eslintcache
+.stylelintcache
+
+# TypeScript
+*.tsbuildinfo
+
+# IDE & Editors
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Operating System
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Local certificates and keys
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Generated files
+*.generated.*
