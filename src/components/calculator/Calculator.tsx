@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowRight, Check, Copy, Minus, Plus, Trash2, TriangleAlert, X } from 'lucide-react';
 import {
   SplitError,
   computeBillShares,
@@ -34,6 +35,42 @@ export function Calculator() {
   const [newName, setNewName] = useState('');
   const [payInfo, setPayInfo] = useState('');
   const [copied, setCopied] = useState(false);
+  const resetDialogRef = useRef<HTMLDialogElement>(null);
+
+  function openResetModal() {
+    if (typeof resetDialogRef.current?.showModal === 'function') {
+      resetDialogRef.current.showModal();
+    } else {
+      resetDialogRef.current?.setAttribute('open', '');
+    }
+  }
+
+  function closeResetModal() {
+    if (typeof resetDialogRef.current?.close === 'function') {
+      resetDialogRef.current.close();
+    } else {
+      resetDialogRef.current?.removeAttribute('open');
+    }
+  }
+
+  function confirmReset() {
+    setState(emptyState);
+    closeResetModal();
+  }
+
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDialogElement>) => {
+    const dialog = resetDialogRef.current;
+    if (!dialog) return;
+    const rect = dialog.getBoundingClientRect();
+    const isInDialog =
+      rect.top <= e.clientY &&
+      e.clientY <= rect.top + rect.height &&
+      rect.left <= e.clientX &&
+      e.clientX <= rect.left + rect.width;
+    if (!isInDialog) {
+      closeResetModal();
+    }
+  };
 
   // Muat dari perangkat setelah mount (menghindari mismatch hidrasi SSR).
   useEffect(() => {
@@ -52,7 +89,7 @@ export function Calculator() {
   const patch = (p: Partial<CalcState>) => setState((s) => ({ ...s, ...p }));
   const nameOf = (id: string) => state.people.find((p) => p.id === id)?.name ?? '?';
 
-  // ── orang ──
+  // orang
   function addPerson() {
     const name = newName.trim();
     if (!name) return;
@@ -75,7 +112,7 @@ export function Calculator() {
     });
   }
 
-  // ── item ──
+  // item
   const updateItem = (id: string, p: Partial<Line>) =>
     setState((s) => ({ ...s, items: s.items.map((it) => (it.id === id ? { ...it, ...p } : it)) }));
   const addItem = () =>
@@ -95,7 +132,7 @@ export function Calculator() {
     updateItem(item.id, { eaters: all ? {} : Object.fromEntries(state.people.map((p) => [p.id, 1])) });
   }
 
-  // ── hitung ──
+  // hitung
   const filledItems = state.items.filter((it) => it.price > 0);
   const subtotal = filledItems.reduce((a, it) => a + it.price * it.qty, 0);
   const auto = useMemo(
@@ -139,13 +176,13 @@ export function Calculator() {
   }, [state.people, state.paidBy, state.discount, state.rounding, filledItems, serviceAmount, taxAmount]);
 
   function whatsappText(r: Extract<Result, { ok: true }>) {
-    const lines = r.shares.map((s) => `• ${nameOf(s.participantId)}: ${formatIDR(s.total)}`);
+    const lines = r.shares.map((s) => `- ${nameOf(s.participantId)}: ${formatIDR(s.total)}`);
     return [
-      `*${state.title || 'Patungan'}* — total ${formatIDR(r.grandTotal)}`,
+      `*${state.title || 'Patungan'}*`,
+      `Total ${formatIDR(r.grandTotal)}`,
       ...lines,
       '',
       settlementMessage({
-        title: 'Transfer',
         transfers: r.transfers,
         nameOf,
         payInfo: payInfo.trim() || undefined,
@@ -164,8 +201,8 @@ export function Calculator() {
     setTimeout(() => setCopied(false), 1500);
   }
 
-  const card = 'rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3';
-  const label = 'text-xs font-medium uppercase tracking-wide text-zinc-400';
+  const card = 'rounded-2xl border border-line bg-surface p-4 space-y-3';
+  const label = 'text-sm font-medium text-muted';
 
   return (
     <div className="space-y-5">
@@ -176,20 +213,18 @@ export function Calculator() {
             onChange={(e) => patch({ title: e.target.value })}
             aria-label="Nama acara"
             maxLength={60}
-            className="min-w-0 flex-1 bg-transparent text-lg font-semibold outline-none"
+            className="min-w-0 flex-1 bg-transparent text-lg font-semibold"
           />
           <div className="flex gap-2 text-xs">
             {state.people.length === 0 && (
-              <button type="button" onClick={() => setState(exampleState())} className="rounded-lg bg-white/10 px-3 py-1.5 hover:bg-white/15">
+              <button type="button" onClick={() => setState(exampleState())} className="rounded-lg bg-sand px-3 py-1.5 hover:bg-sand-strong">
                 Coba contoh
               </button>
             )}
             <button
               type="button"
-              onClick={() => {
-                if (confirm('Hapus semua data kalkulator?')) setState(emptyState);
-              }}
-              className="rounded-lg bg-white/10 px-3 py-1.5 hover:bg-white/15"
+              onClick={openResetModal}
+              className="rounded-lg bg-sand px-3 py-1.5 hover:bg-sand-strong"
             >
               Reset
             </button>
@@ -202,15 +237,15 @@ export function Calculator() {
         <h2 className="font-semibold">1. Siapa saja?</h2>
         <div className="flex flex-wrap gap-2">
           {state.people.map((p) => (
-            <span key={p.id} className="inline-flex items-center gap-1 rounded-full bg-brand-500/20 py-1 pl-3 pr-1 text-sm">
+            <span key={p.id} className="inline-flex items-center gap-1 rounded-full bg-brand-soft text-brand-ink py-1 pl-3 pr-1 text-sm">
               {p.name}
               <button
                 type="button"
                 aria-label={`Hapus ${p.name}`}
                 onClick={() => removePerson(p.id)}
-                className="grid h-6 w-6 place-items-center rounded-full hover:bg-white/10"
+                className="grid h-6 w-6 place-items-center rounded-full hover:bg-sand"
               >
-                ×
+                <X size={14} aria-hidden="true" />
               </button>
             </span>
           ))}
@@ -222,19 +257,19 @@ export function Calculator() {
             onKeyDown={(e) => e.key === 'Enter' && addPerson()}
             maxLength={40}
             placeholder="Nama teman"
-            className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none focus:border-brand-400"
+            className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-2 focus:border-brand"
           />
-          <button type="button" onClick={addPerson} className="rounded-lg bg-brand-500 px-4 py-2 font-semibold hover:bg-brand-400">
+          <button type="button" onClick={addPerson} className="rounded-lg bg-brand px-4 py-2 font-semibold hover:bg-brand-hover">
             Tambah
           </button>
         </div>
         {state.people.length > 0 && (
           <label className="flex items-center gap-2 text-sm">
-            <span className="text-zinc-400">Yang bayar ke kasir:</span>
+            <span className="text-muted">Yang bayar ke kasir:</span>
             <select
               value={state.paidBy ?? ''}
               onChange={(e) => patch({ paidBy: e.target.value || null })}
-              className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1"
+              className="rounded-lg border border-line bg-surface px-2 py-1"
             >
               {state.people.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -249,32 +284,32 @@ export function Calculator() {
       {/* 2. Pesanan */}
       <section className={card}>
         <h2 className="font-semibold">2. Pesanan</h2>
-        {state.items.length === 0 && <p className="text-sm text-zinc-400">Belum ada pesanan.</p>}
+        {state.items.length === 0 && <p className="text-sm text-muted">Belum ada pesanan.</p>}
         <div className="space-y-3">
           {state.items.map((it) => (
-            <div key={it.id} className="space-y-2 rounded-xl bg-black/20 p-3">
+            <div key={it.id} className="space-y-2 rounded-xl bg-cream p-3">
               <div className="flex gap-2">
                 <input
                   value={it.name}
                   onChange={(e) => updateItem(it.id, { name: e.target.value })}
                   placeholder="Nama menu"
                   maxLength={100}
-                  className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none focus:border-brand-400"
+                  className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-2 focus:border-brand"
                 />
-                <button type="button" aria-label="Hapus item" onClick={() => removeItem(it.id)} className="rounded-lg px-2 text-zinc-400 hover:bg-white/10">
-                  🗑
+                <button type="button" aria-label="Hapus item" onClick={() => removeItem(it.id)} className="rounded-lg p-2 text-muted hover:bg-sand">
+                  <Trash2 size={18} aria-hidden="true" />
                 </button>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-40">
                   <MoneyInput value={it.price || null} onChange={(v) => updateItem(it.id, { price: v ?? 0 })} placeholder="Harga satuan" ariaLabel="Harga satuan" />
                 </div>
-                <div className="flex items-center overflow-hidden rounded-lg border border-white/10">
-                  <button type="button" aria-label="Kurangi jumlah" onClick={() => updateItem(it.id, { qty: Math.max(1, it.qty - 1) })} className="px-3 py-2 hover:bg-white/10">−</button>
+                <div className="flex items-center overflow-hidden rounded-lg border border-line">
+                  <button type="button" aria-label="Kurangi jumlah" onClick={() => updateItem(it.id, { qty: Math.max(1, it.qty - 1) })} className="px-3 py-2 hover:bg-sand"><Minus size={16} aria-hidden="true" /></button>
                   <span className="min-w-8 text-center tabular-nums">{it.qty}</span>
-                  <button type="button" aria-label="Tambah jumlah" onClick={() => updateItem(it.id, { qty: Math.min(99, it.qty + 1) })} className="px-3 py-2 hover:bg-white/10">+</button>
+                  <button type="button" aria-label="Tambah jumlah" onClick={() => updateItem(it.id, { qty: Math.min(99, it.qty + 1) })} className="px-3 py-2 hover:bg-sand"><Plus size={16} aria-hidden="true" /></button>
                 </div>
-                <span className="ml-auto text-sm tabular-nums text-zinc-400">{formatIDR(it.price * it.qty)}</span>
+                <span className="ml-auto text-sm tabular-nums text-muted">{formatIDR(it.price * it.qty)}</span>
               </div>
               {state.people.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2">
@@ -287,7 +322,7 @@ export function Calculator() {
                         onClick={() => cyclePortion(it, p.id)}
                         aria-pressed={n > 0}
                         className={`rounded-full px-3 py-1 text-sm transition ${
-                          n > 0 ? 'bg-brand-500 text-white' : 'bg-white/10 text-zinc-300 hover:bg-white/15'
+                          n > 0 ? 'bg-brand text-ink' : 'bg-sand text-muted hover:bg-sand-strong'
                         }`}
                       >
                         {p.name}
@@ -295,7 +330,7 @@ export function Calculator() {
                       </button>
                     );
                   })}
-                  <button type="button" onClick={() => toggleEveryone(it)} className="text-xs text-brand-300 underline-offset-2 hover:underline">
+                  <button type="button" onClick={() => toggleEveryone(it)} className="text-xs text-brand-ink underline-offset-2 hover:underline">
                     semua
                   </button>
                 </div>
@@ -303,11 +338,12 @@ export function Calculator() {
             </div>
           ))}
         </div>
-        <button type="button" onClick={addItem} className="w-full rounded-lg border border-dashed border-white/20 py-2 text-sm hover:bg-white/5">
-          + Tambah menu
+        <button type="button" onClick={addItem} className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-line-strong py-2 text-sm font-medium hover:bg-sand">
+          <Plus size={16} aria-hidden="true" />
+          Tambah menu
         </button>
         {state.items.length > 0 && (
-          <p className="text-xs text-zinc-500">Ketuk nama untuk menandai siapa yang makan; ketuk lagi untuk menambah porsi.</p>
+          <p className="text-xs text-muted">Ketuk nama untuk menandai siapa yang makan; ketuk lagi untuk menambah porsi.</p>
         )}
       </section>
 
@@ -317,15 +353,15 @@ export function Calculator() {
         <div className="grid grid-cols-2 gap-3">
           <label className="space-y-1">
             <span className={label}>Service %</span>
-            <input inputMode="decimal" value={state.servicePct} onChange={(e) => patch({ servicePct: e.target.value, serviceOverride: null })} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-right outline-none focus:border-brand-400" />
+            <input inputMode="decimal" value={state.servicePct} onChange={(e) => patch({ servicePct: e.target.value, serviceOverride: null })} className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-right focus:border-brand" />
           </label>
           <label className="space-y-1">
             <span className={label}>Pajak %</span>
-            <input inputMode="decimal" value={state.taxPct} onChange={(e) => patch({ taxPct: e.target.value, taxOverride: null })} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-right outline-none focus:border-brand-400" />
+            <input inputMode="decimal" value={state.taxPct} onChange={(e) => patch({ taxPct: e.target.value, taxOverride: null })} className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-right focus:border-brand" />
           </label>
         </div>
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={state.taxOnService} onChange={(e) => patch({ taxOnService: e.target.checked })} className="h-4 w-4 accent-violet-500" />
+          <input type="checkbox" checked={state.taxOnService} onChange={(e) => patch({ taxOnService: e.target.checked })} className="h-4 w-4 accent-brand" />
           Pajak dihitung dari (subtotal + service)
         </label>
         <div className="grid grid-cols-2 gap-3">
@@ -339,7 +375,7 @@ export function Calculator() {
           </label>
         </div>
         <details className="text-sm">
-          <summary className="cursor-pointer text-zinc-400">Isi angka persis dari struk (opsional)</summary>
+          <summary className="cursor-pointer text-muted">Isi angka persis dari struk (opsional)</summary>
           <div className="mt-3 grid grid-cols-2 gap-3">
             <label className="space-y-1">
               <span className={label}>Service (Rp)</span>
@@ -350,12 +386,12 @@ export function Calculator() {
               <MoneyInput value={state.taxOverride} onChange={(v) => patch({ taxOverride: v })} placeholder={String(auto.taxAmount)} />
             </label>
           </div>
-          <p className="mt-2 text-xs text-zinc-500">Angka di struk selalu menang atas hitungan dari persen.</p>
+          <p className="mt-2 text-xs text-muted">Angka di struk selalu menang atas hitungan dari persen.</p>
         </details>
         <dl className="space-y-1 text-sm">
-          <div className="flex justify-between"><dt className="text-zinc-400">Subtotal</dt><dd className="tabular-nums">{formatIDR(subtotal)}</dd></div>
-          <div className="flex justify-between"><dt className="text-zinc-400">Service</dt><dd className="tabular-nums">{formatIDR(serviceAmount)}</dd></div>
-          <div className="flex justify-between"><dt className="text-zinc-400">Pajak</dt><dd className="tabular-nums">{formatIDR(taxAmount)}</dd></div>
+          <div className="flex justify-between"><dt className="text-muted">Subtotal</dt><dd className="tabular-nums">{formatIDR(subtotal)}</dd></div>
+          <div className="flex justify-between"><dt className="text-muted">Service</dt><dd className="tabular-nums">{formatIDR(serviceAmount)}</dd></div>
+          <div className="flex justify-between"><dt className="text-muted">Pajak</dt><dd className="tabular-nums">{formatIDR(taxAmount)}</dd></div>
         </dl>
       </section>
 
@@ -363,27 +399,32 @@ export function Calculator() {
       <section className={card} aria-live="polite">
         <h2 className="font-semibold">4. Hasil</h2>
         {result === null && (
-          <p className="text-sm text-zinc-400">Tambahkan minimal 2 orang dan 1 menu berharga untuk melihat hasil.</p>
+          <p className="text-sm text-muted">Tambahkan minimal 2 orang dan 1 menu berharga untuk melihat hasil.</p>
         )}
-        {result?.ok === false && <p className="text-sm text-amber-300">⚠ {result.message}</p>}
+        {result?.ok === false && (
+          <p className="flex items-start gap-2 text-sm text-warning">
+            <TriangleAlert size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+            {result.message}
+          </p>
+        )}
         {result?.ok && (
           <>
             <div className="flex items-baseline justify-between">
-              <span className="text-zinc-400">Total tagihan</span>
+              <span className="text-muted">Total tagihan</span>
               <span className="text-2xl font-bold tabular-nums">{formatIDR(result.grandTotal)}</span>
             </div>
 
             <ul className="space-y-2">
               {result.shares.map((s) => (
-                <li key={s.participantId} className="rounded-xl bg-black/20 p-3">
+                <li key={s.participantId} className="rounded-xl bg-cream p-3">
                   <div className="flex items-center justify-between">
                     <span className="font-medium">
                       {nameOf(s.participantId)}
-                      {s.participantId === state.paidBy && <span className="ml-2 rounded bg-white/10 px-1.5 py-0.5 text-xs text-zinc-300">talangin</span>}
+                      {s.participantId === state.paidBy && <span className="ml-2 rounded bg-sand px-1.5 py-0.5 text-xs text-muted">talangin</span>}
                     </span>
                     <span className="font-semibold tabular-nums">{formatIDR(s.total)}</span>
                   </div>
-                  <p className="mt-1 text-xs tabular-nums text-zinc-400">
+                  <p className="mt-1 text-xs tabular-nums text-muted">
                     Pesanan {formatIDR(s.subtotal)} + service {formatIDR(s.serviceAmount)} + pajak {formatIDR(s.taxAmount)}
                     {s.discountAmount ? ` − diskon ${formatIDR(s.discountAmount)}` : ''}
                     {s.roundingAmount ? ` ${s.roundingAmount > 0 ? '+' : '−'} pembulatan ${formatIDR(Math.abs(s.roundingAmount))}` : ''}
@@ -392,15 +433,18 @@ export function Calculator() {
               ))}
             </ul>
 
-            <h3 className="pt-2 text-sm font-semibold text-zinc-300">Siapa transfer ke siapa</h3>
+            <h3 className="pt-2 text-sm font-semibold text-muted">Siapa transfer ke siapa</h3>
             {result.transfers.length === 0 ? (
-              <p className="text-sm text-zinc-400">Semua sudah impas 🎉</p>
+              <p className="text-sm text-muted">Semua sudah impas.</p>
             ) : (
               <ul className="space-y-1">
                 {result.transfers.map((t, i) => (
-                  <li key={i} className="flex items-center justify-between rounded-xl bg-brand-500/15 px-3 py-2">
-                    <span>
-                      {nameOf(t.from)} <span className="text-zinc-400">→</span> {nameOf(t.to)}
+                  <li key={i} className="flex items-center justify-between rounded-xl bg-brand-soft px-3 py-2">
+                    <span className="flex items-center gap-2">
+                      {nameOf(t.from)}
+                      <ArrowRight size={16} className="text-muted" aria-hidden="true" />
+                      <span className="sr-only">ke</span>
+                      {nameOf(t.to)}
                     </span>
                     <span className="font-semibold tabular-nums">{formatIDR(t.amount)}</span>
                   </li>
@@ -413,14 +457,54 @@ export function Calculator() {
               onChange={(e) => setPayInfo(e.target.value)}
               maxLength={120}
               placeholder="Info bayar (mis. DANA 0812xxxx a.n. Febyan)"
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:border-brand-400"
+              className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-brand"
             />
-            <button type="button" onClick={() => copyResult(result)} className="w-full rounded-xl bg-brand-500 px-4 py-3 font-semibold hover:bg-brand-400">
-              {copied ? '✓ Tersalin' : '📋 Salin teks untuk WhatsApp'}
+            <button type="button" onClick={() => copyResult(result)} className="w-full rounded-xl bg-brand px-4 py-3 font-semibold hover:bg-brand-hover">
+              <span className="inline-flex items-center justify-center gap-2">
+                {copied ? <Check size={18} aria-hidden="true" /> : <Copy size={18} aria-hidden="true" />}
+                {copied ? 'Tersalin' : 'Salin teks untuk WhatsApp'}
+              </span>
             </button>
           </>
         )}
       </section>
+
+      {/* Modal Popup Konfirmasi Reset */}
+      <dialog
+        ref={resetDialogRef}
+        onClick={handleBackdropClick}
+        aria-labelledby="reset-dialog-title"
+        aria-describedby="reset-dialog-desc"
+        className="m-auto w-[calc(100%-2rem)] max-w-sm rounded-2xl border border-line bg-surface p-5 text-ink shadow-xl backdrop:bg-night/60 backdrop:backdrop-blur-xs"
+      >
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <h2 id="reset-dialog-title" className="text-lg font-bold">
+              Reset data kalkulator?
+            </h2>
+            <p id="reset-dialog-desc" className="text-sm text-muted">
+              Semua daftar teman, menu, dan hasil patungan yang tersimpan di perangkatmu akan dihapus.
+            </p>
+          </div>
+          <div className="flex justify-end gap-2 pt-1">
+            <button
+              type="button"
+              autoFocus
+              onClick={closeResetModal}
+              className="rounded-lg bg-sand px-4 py-2 text-sm font-semibold text-ink hover:bg-sand-strong"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              onClick={confirmReset}
+              className="rounded-lg bg-danger px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+            >
+              Ya, reset
+            </button>
+          </div>
+        </div>
+      </dialog>
     </div>
   );
 }

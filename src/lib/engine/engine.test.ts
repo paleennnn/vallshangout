@@ -163,7 +163,7 @@ describe('allocateItems', () => {
   });
 });
 
-describe('computeBillShares — contoh nyata', () => {
+describe('computeBillShares: contoh nyata', () => {
   // Steak 50.000 (Febyan), Nasgor 30.000 (Budi), Es teh 2x10.000 (Siti)
   // service 5.000 + pajak 10.500 => total 115.500
   const bill: Bill = {
@@ -358,13 +358,15 @@ describe('settlementMessage', () => {
       payInfo: 'DANA 0812xxxx a.n. Febyan',
     });
     expect(msg).toContain('*Malming*');
-    expect(msg).toContain('Budi → Febyan');
+    expect(msg).not.toMatch(/[\u2014\u2192]/); // tanpa tanda pisah panjang dan panah
+    expect(msg).toContain('Budi ke Febyan');
     expect(msg).toContain('34.650');
     expect(msg).toContain('Bayar ke: DANA');
   });
 
   it('kosong = impas', () => {
     expect(settlementMessage({ title: 'X', transfers: [], nameOf: String })).toContain('impas');
+    expect(settlementMessage({ transfers: [], nameOf: String })).toBe('Semua sudah impas.');
   });
 });
 

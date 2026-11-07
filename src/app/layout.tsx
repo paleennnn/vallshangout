@@ -9,7 +9,7 @@ const APP_NAME = 'VallsHangout';
 
 export const metadata: Metadata = {
   applicationName: APP_NAME,
-  title: { default: `${APP_NAME} | nongkrong, putuskan, patungan`, template: `%s · ${APP_NAME}` },
+  title: { default: `${APP_NAME}: nongkrong, putuskan, patungan`, template: `%s | ${APP_NAME}` },
   description:
     'Bingung mau nongkrong di mana? Spin wheel, voting tempat, dan bagi tagihan yang adil (service & tax proporsional).',
   appleWebApp: { capable: true, title: APP_NAME, statusBarStyle: 'black-translucent' },
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0f0a1f',
+  themeColor: '#fff7ed',
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
@@ -34,6 +34,15 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="id">
+      <head>
+        <link
+          rel="preload"
+          href="/fonts/plus-jakarta-sans-latin-wght.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body className="min-h-dvh antialiased">
         {/* Service worker dimatikan di mode dev supaya cache tidak mengganggu hot reload. */}
         <SerwistProvider swUrl="/serwist/sw.js" disable={process.env.NODE_ENV === 'development'}>

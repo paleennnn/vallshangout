@@ -11,8 +11,8 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: '/',
     display: 'standalone',
     orientation: 'portrait',
-    background_color: '#0f0a1f',
-    theme_color: '#0f0a1f',
+    background_color: '#fff7ed',
+    theme_color: '#fff7ed',
     categories: ['lifestyle', 'finance', 'social'],
     icons: [
       { src: '/android-chrome-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },

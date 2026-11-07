@@ -1,5 +1,6 @@
 'use client';
 
+import { WifiOff } from 'lucide-react';
 import { useOnline } from '@/hooks/useOnline';
 
 export function OfflineBanner() {
@@ -8,9 +9,10 @@ export function OfflineBanner() {
   return (
     <div
       role="status"
-      className="sticky top-0 z-50 bg-amber-400 px-4 py-2 text-center text-sm font-medium text-amber-950"
+      className="sticky top-0 z-50 flex items-center justify-center gap-2 border-b border-warning/20 bg-warning-bg px-4 py-2 text-center text-sm font-medium text-warning"
     >
-      Kamu sedang offline — kalkulator tetap bisa dipakai, fitur room butuh internet.
+      <WifiOff size={16} className="shrink-0" aria-hidden="true" />
+      Kamu sedang offline. Kalkulator tetap bisa dipakai, fitur room butuh internet.
     </div>
   );
 }

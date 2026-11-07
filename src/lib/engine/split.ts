@@ -1,5 +1,5 @@
 /**
- * VallsHangout — mesin pembagian tagihan.
+ * VallsHangout: mesin pembagian tagihan.
  *
  * Fungsi murni, tanpa dependensi, tanpa efek samping. Jalan di browser (kalkulator
  * tetap berfungsi walau Supabase sedang pause) dan di Vitest.

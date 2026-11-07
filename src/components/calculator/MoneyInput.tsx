@@ -35,7 +35,7 @@ export function MoneyInput({
         const n = Math.min(Number(digits), 9_000_000_000);
         onChange(negative ? -n : n);
       }}
-      className={`w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-right tabular-nums outline-none focus:border-brand-400 ${className}`}
+      className={`w-full rounded-lg border border-line bg-surface px-3 py-2 text-right tabular-nums focus:border-brand ${className}`}
     />
   );
 }

@@ -1,5 +1,5 @@
 /**
- * VallsHangout — bobot spin wheel.
+ * VallsHangout: bobot spin wheel.
  *
  * Tujuan: tempat yang lama tidak dikunjungi peluangnya naik, yang baru didatangi turun,
  * tempat yang belum pernah dikunjungi dapat bonus. Hasil akhirnya tetap diundi di SERVER

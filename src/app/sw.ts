@@ -33,7 +33,7 @@ const serwist = new Serwist({
 
 serwist.addEventListeners();
 
-// ───────────── Web Push ─────────────
+// Web Push
 interface PushPayload {
   title?: string;
   body?: string;

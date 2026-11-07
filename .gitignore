@@ -80,3 +80,4 @@ Desktop.ini
 
 # Generated files
 *.generated.*
+package-lock.json

@@ -13,7 +13,7 @@ export function NewHangoutForm() {
 
   if (supabase === null) {
     return (
-      <p className="rounded-xl border border-amber-400/40 bg-amber-400/10 p-4 text-sm text-amber-200">
+      <p className="rounded-xl border border-warning/30 bg-warning-bg p-4 text-sm text-warning">
         Supabase belum dikonfigurasi. Isi <code>NEXT_PUBLIC_SUPABASE_URL</code> dan kunci
         publiknya di <code>.env.local</code>, lalu jalankan ulang.
       </p>
@@ -45,17 +45,17 @@ export function NewHangoutForm() {
         onChange={(e) => setTitle(e.target.value)}
         maxLength={80}
         placeholder="Nama acara (mis. Malming Cafe A)"
-        className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none focus:border-brand-400"
+        className="w-full rounded-xl border border-line bg-surface px-4 py-3 focus:border-brand"
       />
       <button
         type="button"
         onClick={create}
         disabled={busy}
-        className="w-full rounded-xl bg-brand-500 px-5 py-3 font-semibold hover:bg-brand-400 disabled:opacity-50"
+        className="w-full rounded-xl bg-brand px-5 py-3 font-semibold hover:bg-brand-hover disabled:opacity-50"
       >
         {busy ? 'Membuat…' : 'Buat & dapatkan link'}
       </button>
-      {error && <p className="text-sm text-rose-400">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
     </div>
   );
 }

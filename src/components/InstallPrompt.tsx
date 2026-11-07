@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Download } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -60,8 +61,9 @@ export function InstallPrompt() {
           await deferred.userChoice;
           setDeferred(null);
         }}
-        className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-400"
+        className="inline-flex items-center gap-2 rounded-control bg-brand px-4 py-2 text-sm font-semibold hover:bg-brand-hover"
       >
+        <Download size={16} aria-hidden="true" />
         Install aplikasi
       </button>
     );
@@ -69,7 +71,7 @@ export function InstallPrompt() {
 
   if (ios) {
     return (
-      <p className="text-sm text-zinc-400">
+      <p className="text-sm text-muted">
         Di iPhone/iPad: ketuk <b>Bagikan</b> lalu <b>Tambahkan ke Layar Utama</b> untuk memasang
         (dan untuk menerima notifikasi).
       </p>

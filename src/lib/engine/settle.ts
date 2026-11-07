@@ -1,5 +1,5 @@
 /**
- * VallsHangout — "siapa transfer berapa ke siapa".
+ * VallsHangout: "siapa transfer berapa ke siapa".
  *
  * net > 0  => orang ini harus DITERIMA uangnya (dia yang talangin)
  * net < 0  => orang ini berutang
@@ -176,7 +176,8 @@ export function toTransfersPayload(transfers: Transfer[]) {
 
 /** Teks siap tempel ke grup WhatsApp (format tebal WhatsApp: *teks*). */
 export function settlementMessage(opts: {
-  title: string;
+  /** Opsional: judul tebal di baris pertama. */
+  title?: string;
   transfers: Transfer[];
   nameOf: (id: Id) => string;
   /** Mis. "DANA 0812xxxx a.n. Febyan". */
@@ -184,13 +185,15 @@ export function settlementMessage(opts: {
   formatMoney?: (n: Money) => string;
 }): string {
   const fmt = opts.formatMoney ?? formatIDR;
-  if (opts.transfers.length === 0) return `*${opts.title}* — semua sudah impas 🎉`;
+  const head = opts.title ? [`*${opts.title}*`] : [];
+  if (opts.transfers.length === 0) return [...head, 'Semua sudah impas.'].join('\n');
 
   const lines = opts.transfers.map(
-    (t) => `• ${opts.nameOf(t.from)} → ${opts.nameOf(t.to)}: ${fmt(t.amount)}`,
+    (t) => `- ${opts.nameOf(t.from)} ke ${opts.nameOf(t.to)}: ${fmt(t.amount)}`,
   );
   return [
-    `*${opts.title}* — yang perlu ditransfer:`,
+    ...head,
+    'Yang perlu ditransfer:',
     ...lines,
     ...(opts.payInfo ? ['', `Bayar ke: ${opts.payInfo}`] : []),
   ].join('\n');

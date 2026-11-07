@@ -14,6 +14,8 @@
     "@marsidev/react-turnstile": "^1.6.3",
     "@serwist/turbopack": "^9.5.13",
     "@supabase/supabase-js": "^2.119.0",
+    "lucide-react": "^1.70.0",
+    "motion": "^14.10.0",
     "next": "^16.4.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

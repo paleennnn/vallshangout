@@ -21,13 +21,13 @@ describe('<Calculator />', () => {
     expect((await screen.findAllByText(/143\.220/)).length).toBeGreaterThan(0);
 
     const hasil = screen.getByText('4. Hasil').closest('section') as HTMLElement;
-    // Febyan 66.990 · Budi 43.890 · Siti 32.340
+    // Febyan 66.990, Budi 43.890, Siti 32.340
     expect(within(hasil).getAllByText(/66\.990/).length).toBeGreaterThan(0);
     expect(within(hasil).getAllByText(/43\.890/).length).toBeGreaterThan(0);
     expect(within(hasil).getAllByText(/32\.340/).length).toBeGreaterThan(0);
     // Transfer: Budi -> Febyan dan Siti -> Febyan
-    expect(hasil.textContent).toMatch(/Budi\s*→\s*Febyan/);
-    expect(hasil.textContent).toMatch(/Siti\s*→\s*Febyan/);
+    expect(hasil.textContent).toMatch(/Budi\s*ke\s*Febyan/);
+    expect(hasil.textContent).toMatch(/Siti\s*ke\s*Febyan/);
     expect(hasil.textContent).toMatch(/talangin/);
   });
 
@@ -67,5 +67,36 @@ describe('<Calculator />', () => {
     fireEvent.change(serviceInput, { target: { value: '10000' } });
     // 124.000 + 10.000 + 13.020 = 147.020
     expect((await screen.findAllByText(/147\.020/)).length).toBeGreaterThan(0);
+  });
+
+  it('reset data menampilkan modal konfirmasi dan mengosongkan state saat disetujui', async () => {
+    HTMLDialogElement.prototype.showModal = HTMLDialogElement.prototype.showModal ?? function (this: HTMLDialogElement) {
+      this.setAttribute('open', '');
+    };
+    HTMLDialogElement.prototype.close = HTMLDialogElement.prototype.close ?? function (this: HTMLDialogElement) {
+      this.removeAttribute('open');
+    };
+
+    render(<Calculator />);
+    fireEvent.click(screen.getByText('Coba contoh'));
+    await screen.findAllByText(/143\.220/);
+
+    // Klik tombol Reset
+    fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
+
+    // Modal popup muncul
+    expect(screen.getByRole('heading', { name: 'Reset data kalkulator?' })).toBeTruthy();
+    expect(screen.getByText(/Semua daftar teman, menu, dan hasil patungan/i)).toBeTruthy();
+
+    // Klik Batal -> data masih ada
+    fireEvent.click(screen.getByRole('button', { name: 'Batal' }));
+    expect((await screen.findAllByText(/143\.220/)).length).toBeGreaterThan(0);
+
+    // Klik Reset lagi lalu setujui (Ya, reset)
+    fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ya, reset' }));
+
+    // Data kembali ke state awal / kosong
+    expect(screen.getByText(/minimal 2 orang dan 1 menu/i)).toBeTruthy();
   });
 });

@@ -75,7 +75,7 @@ export function SupabaseProvider({ children }: { children: ReactNode }) {
     const { data } = await client.auth.getSession();
     if (data.session) return data.session;
 
-    if (!navigator.onLine) throw new Error('Sedang offline — sambungkan internet dulu.');
+    if (!navigator.onLine) throw new Error('Sedang offline. Sambungkan internet dulu.');
 
     pending.current ??= (async () => {
       try {

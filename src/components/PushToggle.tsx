@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Bell, BellOff } from 'lucide-react';
 import { useSupabase } from '@/components/SupabaseProvider';
 
 type State =
@@ -106,18 +107,20 @@ export function PushToggle() {
   return (
     <div className="space-y-2">
       {state === 'off' && (
-        <button type="button" onClick={enable} className="rounded-xl bg-white/10 px-4 py-2 text-sm hover:bg-white/15">
-          🔔 Aktifkan notifikasi
+        <button type="button" onClick={enable} className="inline-flex items-center gap-2 rounded-control bg-sand px-4 py-2 text-sm font-semibold hover:bg-sand-strong">
+          <Bell size={16} aria-hidden="true" />
+          Aktifkan notifikasi
         </button>
       )}
       {state === 'on' && (
-        <button type="button" onClick={disable} className="rounded-xl bg-white/10 px-4 py-2 text-sm hover:bg-white/15">
-          🔕 Matikan notifikasi
+        <button type="button" onClick={disable} className="inline-flex items-center gap-2 rounded-control bg-sand px-4 py-2 text-sm font-semibold hover:bg-sand-strong">
+          <BellOff size={16} aria-hidden="true" />
+          Matikan notifikasi
         </button>
       )}
-      {(state === 'busy' || state === 'checking') && <p className="text-sm text-zinc-400">Memeriksa…</p>}
-      {hints[state] && <p className="text-sm text-zinc-400">{hints[state]}</p>}
-      {message && <p className="text-sm text-rose-400">{message}</p>}
+      {(state === 'busy' || state === 'checking') && <p className="text-sm text-muted">Memeriksa…</p>}
+      {hints[state] && <p className="text-sm text-muted">{hints[state]}</p>}
+      {message && <p className="text-sm text-danger">{message}</p>}
     </div>
   );
 }

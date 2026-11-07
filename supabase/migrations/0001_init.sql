@@ -1,12 +1,12 @@
 -- =====================================================================
--- VallsHangout — skema Supabase (Postgres 15+)
+-- VallsHangout: skema Supabase (Postgres 15+)
 --
 -- Cara pakai: tempel ke SQL Editor Supabase (sekali jalan di project kosong)
 -- atau simpan sebagai supabase/migrations/<timestamp>_init.sql
 --
 -- Prasyarat di dashboard:
---   Authentication → Sign In / Providers → aktifkan "Allow anonymous sign-ins"
---   Authentication → Attack Protection → aktifkan CAPTCHA (mis. Turnstile),
+--   Authentication > Sign In / Providers > aktifkan "Allow anonymous sign-ins"
+--   Authentication > Attack Protection > aktifkan CAPTCHA (mis. Turnstile),
 --   supaya project publik tidak dibanjiri akun anonim.
 --
 -- Konvensi:
@@ -19,12 +19,12 @@
 --   * Penulisan sensitif lewat RPC: join_*, do_spin, veto_spin, accept_spin,
 --     finalize_bill, replace_transfers.
 --
--- Urutan: PART 0 util · 1 tabel · 2 view · 3 helper+trigger · 4 RPC ·
---         5 RLS · 6 grants/realtime/seed
+-- Urutan: PART 0 util, 1 tabel, 2 view, 3 helper+trigger, 4 RPC,
+--         5 RLS, 6 grants/realtime/seed
 -- =====================================================================
 
 -- =====================================================================
--- PART 0 — UTIL
+-- PART 0: UTIL
 -- =====================================================================
 create schema if not exists extensions;
 create extension if not exists pgcrypto with schema extensions;
@@ -72,14 +72,14 @@ begin
 end $$;
 
 -- =====================================================================
--- PART 1 — TABEL
+-- PART 1: TABEL
 -- =====================================================================
 
 -- ---------- Profil (1:1 dengan auth.users, termasuk user anonim) ----------
 create table public.profiles (
   id           uuid primary key references auth.users (id) on delete cascade,
   display_name text not null default 'Anon' check (char_length(display_name) between 1 and 40),
-  avatar_emoji text not null default '🙂',
+  avatar_color text not null default '#F97316' check (avatar_color ~* '^#[0-9a-f]{6}$'),  -- avatar = huruf awal nama di atas warna ini
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
 );
@@ -88,7 +88,7 @@ create table public.profiles (
 create table public.circles (
   id          uuid primary key default gen_random_uuid(),
   name        text not null check (char_length(name) between 1 and 60),
-  emoji       text not null default '🍻',
+  icon        text not null default 'users' check (char_length(icon) <= 40),  -- nama ikon lucide
   invite_code text not null unique default private.gen_invite_code(8),
   created_by  uuid not null default auth.uid() references public.profiles (id) on delete cascade,
   created_at  timestamptz not null default now()
@@ -107,7 +107,7 @@ create table public.place_categories (
   id         smallint generated always as identity primary key,
   slug       text not null unique,
   name       text not null,
-  emoji      text not null default '📍',
+  icon       text check (icon is null or char_length(icon) <= 40),  -- nama ikon lucide; null = pakai ikon induk
   parent_id  smallint references public.place_categories (id) on delete cascade,
   sort_order smallint not null default 0
 );
@@ -376,7 +376,7 @@ begin
 end $$;
 
 -- =====================================================================
--- PART 2 — VIEW (security_invoker => RLS tabel dasar tetap berlaku)
+-- PART 2: VIEW (security_invoker => RLS tabel dasar tetap berlaku)
 -- =====================================================================
 
 -- Total per bill: subtotal item + service + tax - diskon + pembulatan.
@@ -452,7 +452,7 @@ where hp.user_id is not null and h.circle_id is not null
 group by h.circle_id, m.game, hp.user_id;
 
 -- =====================================================================
--- PART 3 — FUNGSI HELPER (schema private) & TRIGGER
+-- PART 3: FUNGSI HELPER (schema private) & TRIGGER
 -- security definer + search_path kosong: aman & tidak memicu rekursi RLS.
 -- =====================================================================
 
@@ -662,7 +662,7 @@ create trigger transfers_guard
   for each row execute function private.transfers_guard();
 
 -- =====================================================================
--- PART 4 — RPC (dipanggil dari client: supabase.rpc('nama', {...}))
+-- PART 4: RPC (dipanggil dari client: supabase.rpc('nama', {...}))
 -- =====================================================================
 
 -- Gabung circle lewat kode undangan.
@@ -911,7 +911,7 @@ begin
 end $$;
 
 -- =====================================================================
--- PART 5 — ROW LEVEL SECURITY
+-- PART 5: ROW LEVEL SECURITY
 -- User anonim (signInAnonymously) memakai role `authenticated`, jadi semua
 -- policy memakai `to authenticated` dan auth.uid(). Role `anon` tidak diberi apa-apa.
 -- =====================================================================
@@ -1078,7 +1078,7 @@ create policy push_subscriptions_own on public.push_subscriptions for all to aut
   with check (user_id = (select auth.uid()));
 
 -- =====================================================================
--- PART 6 — GRANTS, REALTIME, SEED
+-- PART 6: GRANTS, REALTIME, SEED
 -- =====================================================================
 
 -- Role `anon` (tanpa JWT) tidak butuh apa-apa; semua lewat `authenticated`.
@@ -1117,25 +1117,26 @@ begin
 end $$;
 
 -- Seed kategori.
-insert into public.place_categories (slug, name, emoji, sort_order) values
-  ('cafe',    'Cafe',      '☕', 1),
-  ('game',    'Game',      '🎮', 2),
-  ('resto',   'Resto',     '🍜', 3),
-  ('sport',   'Olahraga',  '🏸', 4),
-  ('outdoor', 'Outdoor',   '🌳', 5)
+-- icon = nama ikon lucide (lucide-react); anak tanpa ikon memakai ikon induknya.
+insert into public.place_categories (slug, name, icon, sort_order) values
+  ('cafe',    'Cafe',      'coffee',    1),
+  ('game',    'Game',      'gamepad-2', 2),
+  ('resto',   'Resto',     'utensils',  3),
+  ('sport',   'Olahraga',  'dumbbell',  4),
+  ('outdoor', 'Outdoor',   'trees',     5)
 on conflict (slug) do nothing;
 
-insert into public.place_categories (slug, name, emoji, parent_id, sort_order)
-select v.slug, v.name, v.emoji, p.id, v.ord
+insert into public.place_categories (slug, name, icon, parent_id, sort_order)
+select v.slug, v.name, v.icon, p.id, v.ord
 from (values
-  ('billiard',    'Billiard',    '🎱', 'game',  1),
-  ('playstation', 'PlayStation', '🕹️', 'game',  2),
-  ('board-game',  'Board Game',  '🎲', 'game',  3),
-  ('karaoke',     'Karaoke',     '🎤', 'game',  4),
-  ('bowling',     'Bowling',     '🎳', 'game',  5),
-  ('futsal',      'Futsal',      '⚽', 'sport', 1),
-  ('badminton',   'Badminton',   '🏸', 'sport', 2)
-) as v(slug, name, emoji, parent, ord)
+  ('billiard',    'Billiard',    null::text,   'game',  1),
+  ('playstation', 'PlayStation', 'gamepad-2',  'game',  2),
+  ('board-game',  'Board Game',  'dices',      'game',  3),
+  ('karaoke',     'Karaoke',     'mic-vocal',  'game',  4),
+  ('bowling',     'Bowling',     null,         'game',  5),
+  ('futsal',      'Futsal',      null,         'sport', 1),
+  ('badminton',   'Badminton',   null,         'sport', 2)
+) as v(slug, name, icon, parent, ord)
 join public.place_categories p on p.slug = v.parent
 on conflict (slug) do nothing;
 

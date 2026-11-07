@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { Check, Link2 } from 'lucide-react';
 import { useSupabase } from '@/components/SupabaseProvider';
 import { PushToggle } from '@/components/PushToggle';
 import type { Hangout, HangoutPreview, Participant } from '@/lib/supabase/types';
@@ -111,24 +112,24 @@ export function Room({ code }: { code: string }) {
 
   switch (view.kind) {
     case 'loading':
-      return <p className="text-zinc-400">Memuat…</p>;
+      return <p className="text-muted">Memuat…</p>;
     case 'no-supabase':
       return (
-        <p className="rounded-xl border border-amber-400/40 bg-amber-400/10 p-4 text-sm text-amber-200">
+        <p className="rounded-xl border border-warning/30 bg-warning-bg p-4 text-sm text-warning">
           Supabase belum dikonfigurasi (lihat <code>.env.example</code>).
         </p>
       );
     case 'not-found':
-      return <p className="text-zinc-300">Kode <b className="font-mono">{code}</b> tidak ditemukan.</p>;
+      return <p className="text-muted">Kode <b className="font-mono">{code}</b> tidak ditemukan.</p>;
     case 'error':
-      return <p className="text-rose-400">{view.message}</p>;
+      return <p className="text-danger">{view.message}</p>;
     case 'preview':
       return (
         <div className="space-y-4">
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <div className="rounded-2xl border border-line bg-surface p-5">
             <h1 className="text-2xl font-bold">{view.preview.title}</h1>
-            <p className="text-sm text-zinc-400">
-              Dari {view.preview.host_name ?? 'seseorang'} · {view.preview.participant_count} peserta
+            <p className="text-sm text-muted">
+              Dari {view.preview.host_name ?? 'seseorang'}, {view.preview.participant_count} peserta
             </p>
           </div>
           <input
@@ -136,13 +137,13 @@ export function Room({ code }: { code: string }) {
             onChange={(e) => setName(e.target.value)}
             maxLength={40}
             placeholder="Nama panggilanmu"
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none focus:border-brand-400"
+            className="w-full rounded-xl border border-line bg-surface px-4 py-3 focus:border-brand"
           />
           <button
             type="button"
             onClick={join}
             disabled={joining}
-            className="w-full rounded-xl bg-brand-500 px-5 py-3 font-semibold hover:bg-brand-400 disabled:opacity-50"
+            className="w-full rounded-xl bg-brand px-5 py-3 font-semibold hover:bg-brand-hover disabled:opacity-50"
           >
             {joining ? 'Bergabung…' : 'Gabung hangout'}
           </button>
@@ -153,20 +154,21 @@ export function Room({ code }: { code: string }) {
         <div className="space-y-6">
           <div>
             <h1 className="text-2xl font-bold">{view.hangout.title}</h1>
-            <p className="font-mono text-sm tracking-widest text-zinc-400">{view.hangout.invite_code}</p>
+            <p className="font-mono text-sm tracking-widest text-muted">{view.hangout.invite_code}</p>
           </div>
 
-          <button type="button" onClick={copyLink} className="rounded-xl bg-white/10 px-4 py-2 text-sm hover:bg-white/15">
-            {copied ? '✓ Tersalin' : '🔗 Bagikan link undangan'}
+          <button type="button" onClick={copyLink} className="inline-flex items-center gap-2 rounded-control bg-sand px-4 py-2 text-sm font-semibold hover:bg-sand-strong">
+            {copied ? <Check size={16} aria-hidden="true" /> : <Link2 size={16} aria-hidden="true" />}
+            {copied ? 'Tersalin' : 'Bagikan link undangan'}
           </button>
 
           <section className="space-y-2">
             <h2 className="font-semibold">Peserta ({participants.length})</h2>
             <ul className="space-y-1">
               {participants.map((p) => (
-                <li key={p.id} className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-2">
+                <li key={p.id} className="flex items-center justify-between rounded-xl bg-surface px-4 py-2">
                   <span>{p.name}</span>
-                  <span className="text-xs text-zinc-400">{p.user_id ? p.rsvp : 'tanpa akun'}</span>
+                  <span className="text-xs text-muted">{p.user_id ? p.rsvp : 'tanpa akun'}</span>
                 </li>
               ))}
             </ul>
