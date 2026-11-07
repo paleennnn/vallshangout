@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { JoinByCode } from '@/components/JoinByCode';
@@ -6,6 +7,14 @@ export default function Home() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center gap-8 p-6">
       <header className="space-y-3">
+        <Image
+          src="/images/LogoFill_noBg.png"
+          alt="VallsHangout"
+          width={100}
+          height={100}
+          priority
+          className="h-20 w-20 object-contain"
+        />
         <p className="text-sm font-semibold tracking-widest text-brand-300">VALLSHANGOUT</p>
         <h1 className="text-4xl font-extrabold leading-tight">
           Bingung? <span className="text-brand-400">Spin.</span> Nongkrong.{' '}
