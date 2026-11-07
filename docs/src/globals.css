@@ -1,0 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+  /* Brand */
+  --color-primary: #F97316;
+  --color-primary-hover: #EA580C;
+  --color-primary-pressed: #C2410C;
+  --color-primary-subtle: #FFEDD5;
+  --color-primary-soft: #FFF7ED;
+
+  /* Neutral */
+  --color-background: #FFF7ED;
+  --color-surface: #FFFFFF;
+  --color-text-primary: #292524;
+  --color-text-secondary: #78716C;
+  --color-border: #E7E5E4;
+  --color-border-strong: #D6D3D1;
+
+  /* Semantic */
+  --color-success: #15803D;
+  --color-success-bg: #F0FDF4;
+  --color-warning: #B45309;
+  --color-warning-bg: #FFFBEB;
+  --color-danger: #B91C1C;
+  --color-danger-bg: #FEF2F2;
+  --color-info: #0369A1;
+  --color-info-bg: #F0F9FF;
+
+  /* Typography */
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-size-display: 2.5rem;
+  --font-size-h1: 2rem;
+  --font-size-h2: 1.5rem;
+  --font-size-h3: 1.25rem;
+  --font-size-body: 1rem;
+  --font-size-small: 0.875rem;
+  --font-size-caption: 0.75rem;
+
+  /* Shape */
+  --radius-card: 1rem;
+  --radius-control: 0.75rem;
+  --radius-chip: 9999px;
+}
+
+html {
+  font-family: var(--font-sans);
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-text-primary);
+}
+
+/* Example component tokens */
+.vs-button-primary {
+  background: var(--color-primary);
+  color: var(--color-text-primary);
+  border-radius: var(--radius-control);
+  font-weight: 600;
+}
+
+.vs-button-primary:hover {
+  background: var(--color-primary-hover);
+}
+
+.vs-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.vs-category-chip {
+  background: var(--color-primary-subtle);
+  color: #9A3412;
+  border-radius: var(--radius-chip);
+}
