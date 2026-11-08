@@ -19,16 +19,15 @@ export function SiteHeader() {
       className={`sticky top-0 z-40 border-b border-line bg-cream/90 backdrop-blur ${isHome ? '' : 'hidden md:block'}`}
     >
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5">
-        <Link href="/" className="flex items-center gap-2.5 text-lg font-extrabold tracking-tight">
+        <Link href="/" className="flex items-center" aria-label="VallsHangout Beranda">
           <Image
-            src="/images/LogoFill_noBg.png"
-            alt="VallsHangout Logo"
-            width={28}
-            height={28}
-            className="h-7 w-7 object-contain"
+            src="/images/LogoUtama.svg"
+            alt="VallsHangout"
+            width={151}
+            height={32}
+            className="h-8 w-auto object-contain"
             priority
           />
-          <span>vallshangout</span>
         </Link>
         <nav aria-label="Navigasi situs" className="hidden items-center gap-1 text-sm font-semibold md:flex">
           {NAV_ITEMS.filter((item) => item.href !== '/').map((item) => {

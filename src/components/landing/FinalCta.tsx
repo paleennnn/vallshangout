@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { JoinByCode } from '@/components/JoinByCode';
+import { SiteFooter } from '@/components/SiteFooter';
 
 export function FinalCta() {
   return (
@@ -33,9 +34,7 @@ export function FinalCta() {
           </div>
         </div>
       </section>
-      <footer className="border-t border-line bg-cream">
-        <p className="mx-auto max-w-6xl px-5 py-6 text-sm text-muted">Dibuat untuk nongkrong bareng teman.</p>
-      </footer>
+      <SiteFooter />
     </>
   );
 }
