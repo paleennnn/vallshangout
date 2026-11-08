@@ -4,6 +4,8 @@ import { SerwistProvider } from '@serwist/turbopack/react';
 import './globals.css';
 import { SupabaseProvider } from '@/components/SupabaseProvider';
 import { OfflineBanner } from '@/components/OfflineBanner';
+import { BottomNav } from '@/components/BottomNav';
+import { SiteHeader } from '@/components/SiteHeader';
 
 const APP_NAME = 'VallsHangout';
 
@@ -48,7 +50,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <SerwistProvider swUrl="/serwist/sw.js" disable={process.env.NODE_ENV === 'development'}>
           <SupabaseProvider>
             <OfflineBanner />
+            <SiteHeader />
             {children}
+            {/* ruang untuk bottom nav mengambang (mobile) */}
+            <div aria-hidden="true" className="h-[calc(5.75rem+env(safe-area-inset-bottom))] md:hidden" />
+            <BottomNav />
           </SupabaseProvider>
         </SerwistProvider>
       </body>

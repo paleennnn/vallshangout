@@ -6,7 +6,7 @@ export function FinalCta() {
   return (
     <>
       <section className="border-t border-line bg-surface">
-        <div className="mx-auto grid max-w-6xl gap-10 px-5 py-20 lg:grid-cols-2 lg:py-28">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-10 px-5 py-20 lg:grid-cols-2 lg:py-28">
           <div>
             <h2 className="text-balance text-[clamp(2rem,4.2vw,3.2rem)] font-extrabold leading-[1.06] tracking-[-0.03em]">
               Nongkrong malam ini?

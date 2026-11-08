@@ -8,7 +8,7 @@ export default function CalculatorPage() {
   return (
     <main className="mx-auto max-w-2xl space-y-6 p-4 pb-24 sm:p-6">
       <header className="space-y-1">
-        <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink">
+        <Link href="/" className="hidden items-center gap-1.5 text-sm text-muted hover:text-ink md:inline-flex">
           <ArrowLeft size={14} aria-hidden="true" />
           Beranda
         </Link>
