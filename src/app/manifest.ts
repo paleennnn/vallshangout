@@ -25,6 +25,11 @@ export default function manifest(): MetadataRoute.Manifest {
         icons: [{ src: '/android-chrome-192x192.png', sizes: '192x192', type: 'image/png' }],
       },
       {
+        name: 'Roda putar',
+        url: '/spin',
+        icons: [{ src: '/android-chrome-192x192.png', sizes: '192x192', type: 'image/png' }],
+      },
+      {
         name: 'Hangout baru',
         url: '/new',
         icons: [{ src: '/android-chrome-192x192.png', sizes: '192x192', type: 'image/png' }],

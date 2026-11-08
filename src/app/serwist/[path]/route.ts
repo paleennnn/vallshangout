@@ -8,6 +8,8 @@ export const { dynamic, dynamicParams, revalidate, generateStaticParams, GET } =
   additionalPrecacheEntries: [
     { url: '/~offline', revision },
     { url: '/calculator', revision },
+    { url: '/spin', revision },
+    { url: '/hangouts', revision },
     { url: '/', revision },
     { url: '/fonts/plus-jakarta-sans-latin-wght.woff2', revision },
     { url: '/fonts/ibm-plex-mono-latin-400.woff2', revision },

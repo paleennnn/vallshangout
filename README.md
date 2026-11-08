@@ -9,7 +9,7 @@ Next.js 16, Supabase, PWA (bisa di-install, kalkulator jalan offline, Web Push),
 npm install
 cp .env.example .env.local   # isi sesuai langkah di bawah
 npm run dev                  # http://localhost:3000
-npm test                     # 47 tes (engine, data animasi landing, UI kalkulator)
+npm test                     # 64 tes (engine, landing, kalkulator, roda, bottom nav, hub)
 ```
 
 Tanpa `.env.local` pun aplikasi jalan: **kalkulator `/calculator` tidak butuh Supabase**.
@@ -77,6 +77,19 @@ Sans (self-host di `public/fonts`, lisensi SIL OFL). Token ada di `src/app/globa
 - Ikon memakai `lucide-react`. Tidak memakai emoji. Kolom `icon` di database menyimpan nama ikon lucide.
 - Animasi landing page ada di `src/components/landing`; mengikuti `prefers-reduced-motion`
   (versi statis tanpa animasi scroll).
+
+## Navigasi dan halaman
+
+- Mobile: bottom nav mengambang (`src/components/BottomNav.tsx`) dengan 4 tujuan: Beranda, Kalkulator,
+  Roda, Hangout. Item aktif berupa lingkaran krem yang bergeser. Bar ini bersembunyi saat mengetik
+  (keyboard layar) dan tidak tampil di layar `md` ke atas; di sana perpindahan halaman lewat header
+  (`SiteHeader.tsx`). Daftar tujuan ada di satu tempat: `src/components/nav-items.ts`.
+- `/spin`: roda putar mandiri dengan pilihan kustom, riwayat, dan "coret dari roda". Tersimpan di
+  perangkat, jalan offline. Undian memakai `crypto.getRandomValues` (`src/lib/engine/random.ts`).
+  Undian resmi di room tetap diundi di server lewat `do_spin`.
+- `/hangouts`: daftar hangout milikmu, buat baru, dan gabung dengan kode.
+- Responsif: halaman sudah dicek tanpa overflow horizontal di lebar 320, 360, dan 390px. Kolom isian
+  memakai font 16px di mobile supaya iOS tidak memperbesar layar saat fokus.
 
 ## Struktur
 

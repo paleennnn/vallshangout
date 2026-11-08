@@ -3,7 +3,7 @@ import { SpinWheel } from './SpinWheel';
 
 export function Hero() {
   return (
-    <section className="mx-auto grid max-w-6xl items-center gap-14 px-5 pb-24 pt-12 lg:grid-cols-[1.25fr_0.75fr] lg:pt-20">
+    <section className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-14 px-5 pb-24 pt-12 lg:grid-cols-[1.25fr_0.75fr] lg:pt-20">
       <div>
         <h1 className="text-balance text-[clamp(2.1rem,4.7vw,3.6rem)] font-extrabold leading-[1.06] tracking-[-0.035em]">
           Nongkrongnya diputar,

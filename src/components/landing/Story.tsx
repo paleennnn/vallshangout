@@ -65,8 +65,8 @@ function ScrollStory() {
   return (
     <section ref={ref} id="cara-kerja" className="on-night relative h-[430svh] bg-night text-cream" aria-labelledby="cara-kerja-sr">
       <h2 id="cara-kerja-sr" className="sr-only">Cara kerja</h2>
-      <div className="sticky top-0 flex h-dvh items-center overflow-hidden pt-14">
-        <div className="mx-auto grid w-full max-w-6xl items-center gap-6 px-5 lg:grid-cols-[minmax(0,1fr)_560px] lg:gap-16">
+      <div className="sticky top-0 flex h-dvh items-center overflow-hidden pt-14 max-md:pb-24">
+        <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-6 px-5 lg:grid-cols-[minmax(0,1fr)_560px] lg:gap-16">
           {/* teks adegan (bertumpuk, saling memudar) */}
           <div>
             <div className="relative h-[190px] lg:h-[230px]" aria-hidden="true">
@@ -111,7 +111,7 @@ function StaticScene({ i, render }: { i: number; render: (p: MotionValue<number>
   const done = useMotionValue(1);
   const [ref, w] = useElementWidth<HTMLDivElement>();
   return (
-    <div className="grid items-center gap-8 py-14 lg:grid-cols-[minmax(0,1fr)_560px] lg:gap-16">
+    <div className="grid grid-cols-1 items-center gap-8 py-14 lg:grid-cols-[minmax(0,1fr)_560px] lg:gap-16">
       <Heading i={i} />
       <div ref={ref} className={STAGE}>
         {render(done, w)}

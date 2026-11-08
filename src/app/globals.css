@@ -110,6 +110,24 @@ dialog::backdrop {
   overscroll-behavior: contain;
 }
 
+/* Mobile: kolom isian < 16px membuat iOS Safari memperbesar halaman saat difokus */
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+a,
+button,
+summary,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
