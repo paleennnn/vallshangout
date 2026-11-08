@@ -15,9 +15,10 @@ describe('nav-items', () => {
     expect(activeIndex('/')).toBe(0);
     expect(activeIndex('/calculator')).toBe(1);
     expect(activeIndex('/spin')).toBe(2);
-    expect(activeIndex('/hangouts')).toBe(3);
-    expect(activeIndex('/h/ABCD2345')).toBe(3);
-    expect(activeIndex('/new')).toBe(3);
+    expect(activeIndex('/places')).toBe(3);
+    expect(activeIndex('/hangouts')).toBe(4);
+    expect(activeIndex('/h/ABCD2345')).toBe(4);
+    expect(activeIndex('/new')).toBe(4);
     expect(activeIndex('/~offline')).toBe(-1);
   });
 
@@ -27,11 +28,11 @@ describe('nav-items', () => {
 });
 
 describe('<BottomNav />', () => {
-  it('menampilkan 4 tujuan dengan label yang bisa dibaca pembaca layar', () => {
+  it('menampilkan 5 tujuan dengan label yang bisa dibaca pembaca layar', () => {
     mockPath = '/';
     render(<BottomNav />);
     const links = screen.getAllByRole('link');
-    expect(links.map((a) => a.getAttribute('href'))).toEqual(['/', '/calculator', '/spin', '/hangouts']);
+    expect(links.map((a) => a.getAttribute('href'))).toEqual(['/', '/calculator', '/spin', '/places', '/hangouts']);
     expect(screen.getByRole('link', { name: 'Kalkulator' })).toBeTruthy();
     expect(screen.getByRole('navigation', { name: 'Navigasi utama' })).toBeTruthy();
   });
@@ -44,6 +45,7 @@ describe('<BottomNav />', () => {
     expect(current[0].getAttribute('href')).toBe('/spin');
     const marker = container.querySelector('span[aria-hidden="true"]') as HTMLElement;
     expect(marker.style.transform).toBe('translateX(200%)'); // item ke-3
+    expect(marker.style.width).toContain('20%'); // lebar = satu dari lima kolom (jsdom menyederhanakan calc)
     expect(marker.style.opacity).toBe('1');
   });
 

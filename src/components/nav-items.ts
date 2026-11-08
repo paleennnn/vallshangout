@@ -1,4 +1,4 @@
-import { Calculator, House, LoaderPinwheel, Users, type LucideIcon } from 'lucide-react';
+import { Calculator, House, LoaderPinwheel, MapPin, Users, type LucideIcon } from 'lucide-react';
 
 export interface NavItem {
   href: string;
@@ -13,6 +13,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: '/', label: 'Beranda', icon: House, match: (p) => p === '/' },
   { href: '/calculator', label: 'Kalkulator', icon: Calculator, match: (p) => p.startsWith('/calculator') },
   { href: '/spin', label: 'Roda', icon: LoaderPinwheel, match: (p) => p.startsWith('/spin') },
+  { href: '/places', label: 'Tempat', icon: MapPin, match: (p) => p.startsWith('/places') },
   {
     href: '/hangouts',
     label: 'Hangout',

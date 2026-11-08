@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, Check, Copy, Minus, Plus, Trash2, TriangleAlert, X } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRight, Check, Copy, MapPin, Minus, Plus, Trash2, TriangleAlert, X } from 'lucide-react';
 import {
   SplitError,
   computeBillShares,
@@ -11,6 +12,7 @@ import {
   type BillShare,
 } from '@/lib/engine/split';
 import { balancesFromBills, settleUp, settlementMessage, type Transfer } from '@/lib/engine/settle';
+import { loadPlaces, type Place } from '@/lib/places/store';
 import { MoneyInput } from './MoneyInput';
 import {
   emptyState,
@@ -29,10 +31,23 @@ type Result =
   | { ok: true; shares: BillShare[]; grandTotal: number; subtotal: number; transfers: Transfer[] }
   | { ok: false; message: string };
 
+/** Nilai kalkulator yang ikut dari sebuah tempat tersimpan. */
+function placePatch(place: Place): Partial<CalcState> {
+  return {
+    title: place.name,
+    servicePct: String(place.servicePct),
+    taxPct: String(place.taxPct),
+    taxOnService: place.taxOnService,
+    serviceOverride: null,
+    taxOverride: null,
+  };
+}
+
 export function Calculator() {
   const [state, setState] = useState<CalcState>(emptyState);
   const [hydrated, setHydrated] = useState(false);
   const [newName, setNewName] = useState('');
+  const [savedPlaces, setSavedPlaces] = useState<Place[]>([]);
   const [payInfo, setPayInfo] = useState('');
   const [copied, setCopied] = useState(false);
   const resetDialogRef = useRef<HTMLDialogElement>(null);
@@ -76,6 +91,15 @@ export function Calculator() {
   useEffect(() => {
     const saved = loadState();
     if (saved) setState(saved);
+    const places = loadPlaces();
+    setSavedPlaces(places);
+    // Datang dari halaman Tempat (?place=ID): isi nama acara, service, dan pajak tempat itu
+    const wanted = new URLSearchParams(window.location.search).get('place');
+    const place = wanted ? places.find((p) => p.id === wanted) : undefined;
+    if (place) {
+      setState((s) => ({ ...s, ...placePatch(place) }));
+      window.history.replaceState(null, '', window.location.pathname);
+    }
     setPayInfo(localStorage.getItem('vh:payinfo') ?? '');
     setHydrated(true);
   }, []);
@@ -230,6 +254,32 @@ export function Calculator() {
             </button>
           </div>
         </div>
+        {savedPlaces.length > 0 ? (
+          <label className="flex items-center gap-2 text-sm">
+            <MapPin size={16} className="shrink-0 text-muted" aria-hidden="true" />
+            <span className="sr-only">Isi dari tempat tersimpan</span>
+            <select
+              value=""
+              onChange={(e) => {
+                const place = savedPlaces.find((p) => p.id === e.target.value);
+                if (place) patch(placePatch(place));
+              }}
+              className="h-10 min-w-0 flex-1 rounded-control border border-line bg-surface px-2"
+            >
+              <option value="">Isi service dan pajak dari tempat tersimpan</option>
+              {savedPlaces.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} (service {p.servicePct}%, pajak {p.taxPct}%)
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <Link href="/places" className="inline-flex items-center gap-1.5 text-sm text-brand-ink underline underline-offset-4">
+            <MapPin size={14} aria-hidden="true" />
+            Simpan tempat langganan agar service dan pajaknya terisi otomatis
+          </Link>
+        )}
       </section>
 
       {/* 1. Orang */}

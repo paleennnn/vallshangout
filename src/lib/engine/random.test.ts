@@ -26,3 +26,36 @@ describe('randomInt', () => {
     expect(() => randomInt(2.5)).toThrowError(RangeError);
   });
 });
+
+import { pickWeighted, randomFloat } from './random';
+
+describe('randomFloat dan pickWeighted', () => {
+  it('randomFloat selalu di [0, 1)', () => {
+    for (let i = 0; i < 2000; i++) {
+      const x = randomFloat();
+      expect(x >= 0 && x < 1).toBe(true);
+    }
+  });
+
+  it('pickWeighted mengikuti bobot (3:1 sekitar 75% banding 25%)', () => {
+    let first = 0;
+    for (let i = 0; i < 8000; i++) if (pickWeighted([3, 1]) === 0) first++;
+    // harapan 6000, simpangan baku sekitar 39: batas 5600..6400 sangat longgar
+    expect(first).toBeGreaterThan(5600);
+    expect(first).toBeLessThan(6400);
+  });
+
+  it('bobot sangat kecil tetap bisa terpilih, tapi jarang', () => {
+    let rare = 0;
+    for (let i = 0; i < 20000; i++) if (pickWeighted([99, 1]) === 1) rare++;
+    expect(rare).toBeGreaterThan(100);
+    expect(rare).toBeLessThan(320);
+  });
+
+  it('menolak bobot tidak valid', () => {
+    expect(() => pickWeighted([])).toThrowError(RangeError);
+    expect(() => pickWeighted([1, 0])).toThrowError(RangeError);
+    expect(() => pickWeighted([1, -2])).toThrowError(RangeError);
+    expect(() => pickWeighted([1, Number.NaN])).toThrowError(RangeError);
+  });
+});
