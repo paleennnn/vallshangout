@@ -2,7 +2,7 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { animate, m, useMotionValue, useMotionValueEvent, useReducedMotion } from 'motion/react';
-import { randomInt } from '@/lib/engine/random';
+import { pickWeighted } from '@/lib/engine/random';
 
 export const MAX_WHEEL_OPTIONS = 20;
 
@@ -12,6 +12,11 @@ export interface WheelHandle {
 
 interface WheelProps {
   labels: string[];
+  /**
+   * Bobot tiap pilihan (> 0). Lebar irisan sebanding bobot, jadi irisan besar memang lebih
+   * berpeluang menang. Tanpa ini semua irisan sama besar.
+   */
+  weights?: number[];
   /** Dipanggil saat roda berhenti. `index` mengacu ke `labels` saat roda mulai diputar. */
   onResult?: (index: number) => void;
   onSpinStart?: () => void;
@@ -39,17 +44,32 @@ function polar(r: number, deg: number): [number, number] {
   const a = ((deg - 90) * Math.PI) / 180;
   return [C + r * Math.cos(a), C + r * Math.sin(a)];
 }
-function slice(i: number, seg: number, n: number) {
-  if (n === 1) return `M${C},${C - 150} A150,150 0 1 1 ${C - 0.01},${C - 150} Z`;
-  const [x0, y0] = polar(150, i * seg);
-  const [x1, y1] = polar(150, (i + 1) * seg);
-  return `M${C},${C} L${x0},${y0} A150,150 0 0 1 ${x1},${y1} Z`;
+
+function slice(start: number, end: number) {
+  const [x0, y0] = polar(150, start);
+  const [x1, y1] = polar(150, end);
+  return `M${C},${C} L${x0},${y0} A150,150 0 ${end - start > 180 ? 1 : 0} 1 ${x1},${y1} Z`;
 }
 
-/** Rotasi (derajat, searah jarum jam) supaya `index` berhenti tepat di bawah penunjuk di atas roda. */
-function targetRotation(index: number, current: number, seg: number) {
-  const jitter = (Math.random() - 0.5) * seg * 0.55;
-  const center = (index + 0.5) * seg + jitter;
+/** Batas sudut tiap irisan: [0, a1, a2, ..., 360]. */
+export function boundsFor(weights: number[]) {
+  const sum = weights.reduce((a, b) => a + b, 0);
+  const out = [0];
+  weights.forEach((w) => out.push(out[out.length - 1] + (360 * w) / sum));
+  out[out.length - 1] = 360;
+  return out;
+}
+
+/** Indeks irisan yang memuat sudut `angle` (0..360). */
+function segmentAt(bounds: number[], angle: number) {
+  for (let i = 0; i < bounds.length - 1; i++) if (angle < bounds[i + 1]) return i;
+  return bounds.length - 2;
+}
+
+/** Rotasi (derajat, searah jarum jam) supaya irisan [start, end] berhenti tepat di bawah penunjuk di atas roda. */
+function targetRotation(start: number, end: number, current: number) {
+  const jitter = (Math.random() - 0.5) * (end - start) * 0.55;
+  const center = (start + end) / 2 + jitter;
   const desired = (((360 - center) % 360) + 360) % 360;
   const base = current - (((current % 360) + 360) % 360);
   let t = base + desired;
@@ -62,7 +82,7 @@ function shorten(label: string, max: number) {
 }
 
 export const Wheel = forwardRef<WheelHandle, WheelProps>(function Wheel(
-  { labels, onResult, onSpinStart, autoSpinMs },
+  { labels, weights, onResult, onSpinStart, autoSpinMs },
   ref,
 ) {
   const reduce = useReducedMotion();
@@ -75,14 +95,18 @@ export const Wheel = forwardRef<WheelHandle, WheelProps>(function Wheel(
   const stop = useRef<(() => void) | null>(null);
 
   const n = labels.length;
-  const seg = 360 / Math.max(n, 1);
+  const w =
+    weights && weights.length === n && weights.every((x) => x > 0 && Number.isFinite(x))
+      ? weights
+      : labels.map(() => 1);
+  const bounds = boundsFor(w);
   const colors = colorsFor(n);
   const fontSize = n <= 8 ? 14.5 : n <= 12 ? 12.5 : 11;
   const maxChars = n <= 8 ? 11 : n <= 12 ? 10 : 9;
 
-  // Penunjuk bergetar tiap melewati batas segmen
+  // Penunjuk bergetar tiap melewati batas irisan
   useMotionValueEvent(rotation, 'change', (v) => {
-    const s = Math.floor((((-v % 360) + 360) % 360) / seg);
+    const s = segmentAt(bounds, ((-v % 360) + 360) % 360);
     if (s !== lastSeg.current && spinningRef.current && !reduce) {
       lastSeg.current = s;
       animate(pointer, [0, -16, 0], { duration: 0.12 });
@@ -91,8 +115,8 @@ export const Wheel = forwardRef<WheelHandle, WheelProps>(function Wheel(
 
   function spin() {
     if (spinningRef.current || n < 2) return;
-    const winner = randomInt(n);
-    const target = targetRotation(winner, rotation.get(), seg);
+    const winner = pickWeighted(w);
+    const target = targetRotation(bounds[winner], bounds[winner + 1], rotation.get());
     onSpinStart?.();
     if (reduce) {
       rotation.set(target);
@@ -142,23 +166,27 @@ export const Wheel = forwardRef<WheelHandle, WheelProps>(function Wheel(
           <svg viewBox="0 0 320 320" className="h-full w-full">
             <circle cx={C} cy={C} r="157" fill="#292524" />
             {labels.map((label, i) => {
-              const mid = i * seg + seg / 2;
+              const arc = bounds[i + 1] - bounds[i];
+              const mid = bounds[i] + arc / 2;
               return (
                 <g key={`${i}-${label}`}>
-                  <path d={slice(i, seg, n)} fill={colors[i].fill} stroke="#FFF7ED" strokeWidth="2" />
-                  <text
-                    transform={`rotate(${mid} ${C} ${C})`}
-                    x={C}
-                    y={C - 106}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fontSize={fontSize}
-                    fontWeight="700"
-                    fill={colors[i].ink}
-                    fontFamily="var(--font-sans)"
-                  >
-                    {shorten(label, maxChars)}
-                  </text>
+                  <path d={slice(bounds[i], bounds[i + 1])} fill={colors[i].fill} stroke="#FFF7ED" strokeWidth="2" />
+                  {/* irisan terlalu sempit tidak muat teks; namanya tetap muncul di hasil */}
+                  {arc >= 13 && (
+                    <text
+                      transform={`rotate(${mid} ${C} ${C})`}
+                      x={C}
+                      y={C - 106}
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fontSize={fontSize}
+                      fontWeight="700"
+                      fill={colors[i].ink}
+                      fontFamily="var(--font-sans)"
+                    >
+                      {shorten(label, maxChars)}
+                    </text>
+                  )}
                 </g>
               );
             })}

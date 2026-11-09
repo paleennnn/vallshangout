@@ -9,6 +9,7 @@ export const { dynamic, dynamicParams, revalidate, generateStaticParams, GET } =
     { url: '/~offline', revision },
     { url: '/calculator', revision },
     { url: '/spin', revision },
+    { url: '/places', revision },
     { url: '/hangouts', revision },
     { url: '/', revision },
     { url: '/fonts/plus-jakarta-sans-latin-wght.woff2', revision },

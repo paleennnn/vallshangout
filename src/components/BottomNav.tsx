@@ -38,13 +38,18 @@ export function BottomNav() {
     >
       <nav
         aria-label="Navigasi utama"
-        className="pointer-events-auto relative grid w-full max-w-[22rem] grid-cols-4 rounded-full bg-night p-2 shadow-[0_14px_32px_-10px_rgba(41,37,36,0.6)]"
+        className="pointer-events-auto relative grid w-full max-w-[23rem] rounded-full bg-night p-2 shadow-[0_14px_32px_-10px_rgba(41,37,36,0.6)]"
+        style={{ gridTemplateColumns: `repeat(${NAV_ITEMS.length}, minmax(0, 1fr))` }}
       >
         {/* lingkaran penanda aktif: bergeser antar item, lebar = satu kolom */}
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute bottom-2 left-2 top-2 flex w-[calc((100%-1rem)/4)] justify-center transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.3,0.9,0.3,1)]"
-          style={{ transform: `translateX(${Math.max(index, 0) * 100}%)`, opacity: index < 0 ? 0 : 1 }}
+          className="pointer-events-none absolute bottom-2 left-2 top-2 flex justify-center transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.3,0.9,0.3,1)]"
+          style={{
+            width: `calc((100% - 1rem) / ${NAV_ITEMS.length})`,
+            transform: `translateX(${Math.max(index, 0) * 100}%)`,
+            opacity: index < 0 ? 0 : 1,
+          }}
         >
           <span className="aspect-square h-full rounded-full bg-cream" />
         </span>
