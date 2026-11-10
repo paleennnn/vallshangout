@@ -15,6 +15,7 @@ import { balancesFromBills, settleUp, settlementMessage, type Transfer } from '@
 import { loadPlaces, type Place } from '@/lib/places/store';
 import { MoneyInput } from './MoneyInput';
 import { patchFromParams } from './params';
+import { ThankYouModal } from './ThankYouModal';
 import {
   emptyState,
   exampleState,
@@ -51,6 +52,7 @@ export function Calculator() {
   const [savedPlaces, setSavedPlaces] = useState<Place[]>([]);
   const [payInfo, setPayInfo] = useState('');
   const [copied, setCopied] = useState(false);
+  const [showThankYouModal, setShowThankYouModal] = useState(false);
   const resetDialogRef = useRef<HTMLDialogElement>(null);
 
   function openResetModal() {
@@ -225,6 +227,7 @@ export function Calculator() {
     }
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+    setShowThankYouModal(true);
   }
 
   const card = 'rounded-2xl border border-line bg-surface p-4 space-y-3';
@@ -557,6 +560,12 @@ export function Calculator() {
           </div>
         </div>
       </dialog>
+
+      {/* Modal Popup Apresiasi & Support Me saat Salin WhatsApp */}
+      <ThankYouModal
+        isOpen={showThankYouModal}
+        onClose={() => setShowThankYouModal(false)}
+      />
     </div>
   );
 }

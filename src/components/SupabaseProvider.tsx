@@ -32,7 +32,7 @@ const SupabaseContext = createContext<SupabaseContextValue>({
   supabase: null,
   session: null,
   restored: false,
-  ensureSession: () => Promise.reject(new Error('Supabase belum dikonfigurasi')),
+  ensureSession: () => Promise.reject(new Error('Layanan online sedang tidak tersedia')),
 });
 
 export function useSupabase() {
@@ -70,7 +70,7 @@ export function SupabaseProvider({ children }: { children: ReactNode }) {
 
   const ensureSession = useCallback(async (): Promise<Session> => {
     const client = getSupabase();
-    if (!client) throw new Error('Supabase belum dikonfigurasi');
+    if (!client) throw new Error('Layanan online sedang tidak tersedia');
 
     const { data } = await client.auth.getSession();
     if (data.session) return data.session;

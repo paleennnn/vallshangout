@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { Calculator } from './Calculator';
 import { STORAGE_KEY } from './state';
@@ -98,5 +98,36 @@ describe('<Calculator />', () => {
 
     // Data kembali ke state awal / kosong
     expect(screen.getByText(/minimal 2 orang dan 1 menu/i)).toBeTruthy();
+  });
+
+  it('menyalin teks untuk WhatsApp membuka modal ucapan terima kasih', async () => {
+    HTMLDialogElement.prototype.showModal =
+      HTMLDialogElement.prototype.showModal ??
+      function (this: HTMLDialogElement) {
+        this.setAttribute('open', '');
+      };
+    HTMLDialogElement.prototype.close =
+      HTMLDialogElement.prototype.close ??
+      function (this: HTMLDialogElement) {
+        this.removeAttribute('open');
+      };
+
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: vi.fn().mockResolvedValue(undefined),
+      },
+    });
+
+    render(<Calculator />);
+    fireEvent.click(screen.getByText('Coba contoh'));
+    await screen.findAllByText(/143\.220/);
+
+    const copyBtn = screen.getByRole('button', { name: /salin teks untuk whatsapp/i });
+    fireEvent.click(copyBtn);
+
+    expect(
+      await screen.findByRole('heading', { name: /terima kasih telah menggunakan vallshangout/i }),
+    ).toBeTruthy();
+    expect(screen.getByText(/sering-sering nongkrong ya/i)).toBeTruthy();
   });
 });

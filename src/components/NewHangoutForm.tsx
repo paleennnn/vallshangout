@@ -14,10 +14,12 @@ export function NewHangoutForm() {
 
   if (supabase === null) {
     return (
-      <p className="rounded-xl border border-warning/30 bg-warning-bg p-4 text-sm text-warning">
-        Supabase belum dikonfigurasi. Isi <code>NEXT_PUBLIC_SUPABASE_URL</code> dan kunci
-        publiknya di <code>.env.local</code>, lalu jalankan ulang.
-      </p>
+      <div className="rounded-xl border border-warning/30 bg-warning-bg p-4 text-sm text-warning">
+        <p className="font-semibold">Layanan hangout online sedang dalam pemeliharaan.</p>
+        <p className="mt-1 text-xs text-muted">
+          Fitur pembuatan room online sedang tidak dapat diakses untuk sementara waktu. Kamu tetap bisa memakai fitur kalkulator patungan dan spin wheel.
+        </p>
+      </div>
     );
   }
 

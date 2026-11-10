@@ -9,15 +9,15 @@ import { HangoutsHub } from './HangoutsHub';
 
 afterEach(cleanup);
 
-describe('<HangoutsHub /> tanpa konfigurasi Supabase', () => {
-  it('tetap menampilkan aksi gabung dan pesan konfigurasi, tanpa crash', async () => {
+describe('<HangoutsHub /> saat layanan offline', () => {
+  it('tetap menampilkan aksi gabung dan pesan pemeliharaan, tanpa crash', async () => {
     render(
       <SupabaseProvider>
         <HangoutsHub />
       </SupabaseProvider>,
     );
     expect(await screen.findByText(/Belum ada\. Buat hangout/)).toBeTruthy();
-    expect(screen.getByText(/Supabase belum dikonfigurasi/)).toBeTruthy();
+    expect(screen.getByText(/Layanan hangout online sedang dalam pemeliharaan/)).toBeTruthy();
     expect(screen.getByPlaceholderText('Kode 8 karakter')).toBeTruthy();
   });
 });

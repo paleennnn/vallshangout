@@ -69,9 +69,12 @@ export function Room({ code }: { code: string }) {
       return <p className="text-muted">Memuat…</p>;
     case 'no-supabase':
       return (
-        <p className="rounded-xl border border-warning/30 bg-warning-bg p-4 text-sm text-warning">
-          Supabase belum dikonfigurasi (lihat <code>.env.example</code>).
-        </p>
+        <div className="rounded-xl border border-warning/30 bg-warning-bg p-4 text-sm text-warning">
+          <p className="font-semibold">Layanan room online sedang dalam pemeliharaan.</p>
+          <p className="mt-1 text-xs text-muted">
+            Tidak dapat menghubungkan ke room saat ini. Silakan coba lagi beberapa saat lagi.
+          </p>
+        </div>
       );
     case 'not-found':
       return <p className="text-muted">Kode <b className="font-mono">{code}</b> tidak ditemukan.</p>;

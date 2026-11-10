@@ -51,7 +51,7 @@ export function PushToggle() {
     setMessage(null);
     setState('busy');
     try {
-      if (!supabase) throw new Error('Supabase belum dikonfigurasi');
+      if (!supabase) throw new Error('Layanan notifikasi sedang tidak tersedia.');
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
         setState(permission === 'denied' ? 'denied' : 'off');
@@ -99,7 +99,7 @@ export function PushToggle() {
   const hints: Partial<Record<State, string>> = {
     unsupported:
       'Browser ini belum mendukung notifikasi. Di iPhone/iPad, pasang dulu ke Layar Utama (iOS 16.4+).',
-    'no-config': 'Notifikasi belum dikonfigurasi (isi kunci VAPID di .env).',
+    'no-config': 'Fitur notifikasi sedang dalam pemeliharaan.',
     'no-sw': 'Notifikasi aktif setelah aplikasi dibuka dari build produksi (service worker mati di mode dev).',
     denied: 'Notifikasi diblokir di pengaturan browser/perangkat.',
   };
