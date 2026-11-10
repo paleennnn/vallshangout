@@ -6,6 +6,7 @@ import { PushToggle } from '@/components/PushToggle';
 import { useSupabase } from '@/components/SupabaseProvider';
 import { fetchLatestSpin, fetchMyHangout, fetchParticipants, setRsvp } from '@/lib/room/api';
 import type { Hangout, Participant, SpinState } from '@/lib/supabase/types';
+import { RoomBills } from './RoomBills';
 import { RoomPlace } from './RoomPlace';
 
 const RSVP_OPTIONS: { value: Participant['rsvp']; label: string }[] = [
@@ -133,6 +134,8 @@ export function JoinedRoom({ initial }: { initial: Hangout }) {
       )}
 
       <RoomPlace hangout={hangout} spin={spin} participants={participants} me={me} isHost={isHost} onChanged={refresh} />
+
+      <RoomBills hangout={hangout} participants={participants} me={me} isHost={isHost} />
 
       <section className={card}>
         <div className="flex items-baseline justify-between">

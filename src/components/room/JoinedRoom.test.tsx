@@ -25,6 +25,8 @@ const h = vi.hoisted(() => {
 });
 vi.mock('@/components/SupabaseProvider', () => ({ useSupabase: () => h.ctx }));
 vi.mock('@/lib/room/api', async (orig) => ({ ...(await orig<typeof import('@/lib/room/api')>()), ...h.api }));
+// Patungan punya channel realtime dan pengujian sendiri (RoomBills.test.tsx)
+vi.mock('./RoomBills', () => ({ RoomBills: () => null }));
 
 import { MotionRoot } from '@/components/MotionRoot';
 import { JoinedRoom } from './JoinedRoom';
