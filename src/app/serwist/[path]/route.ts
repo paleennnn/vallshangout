@@ -5,6 +5,7 @@ const revision = process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.SOURCE_VERSION
 
 export const { dynamic, dynamicParams, revalidate, generateStaticParams, GET } = createSerwistRoute({
   // Halaman yang HARUS tersedia offline sejak aplikasi dipasang.
+  // Aset statis di folder public/ (seperti font & icon) sudah otomatis di-precache oleh Serwist.
   additionalPrecacheEntries: [
     { url: '/~offline', revision },
     { url: '/calculator', revision },
@@ -12,9 +13,6 @@ export const { dynamic, dynamicParams, revalidate, generateStaticParams, GET } =
     { url: '/places', revision },
     { url: '/hangouts', revision },
     { url: '/', revision },
-    { url: '/fonts/plus-jakarta-sans-latin-wght.woff2', revision },
-    { url: '/fonts/ibm-plex-mono-latin-400.woff2', revision },
-    { url: '/fonts/ibm-plex-mono-latin-500.woff2', revision },
   ],
   swSrc: 'src/app/sw.ts',
   useNativeEsbuild: true,

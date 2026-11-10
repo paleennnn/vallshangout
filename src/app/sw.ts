@@ -12,8 +12,18 @@ declare global {
 
 declare const self: ServiceWorkerGlobalScope;
 
+// Mencegah error duplikasi 'add-to-cache-list-conflicting-entries' jika URL yang sama
+// masuk ke precache manifest dari beberapa sumber sekaligus.
+const seenUrls = new Set<string>();
+const precacheEntries = self.__SW_MANIFEST?.filter((entry) => {
+  const url = typeof entry === 'string' ? entry : entry.url;
+  if (seenUrls.has(url)) return false;
+  seenUrls.add(url);
+  return true;
+});
+
 const serwist = new Serwist({
-  precacheEntries: self.__SW_MANIFEST,
+  precacheEntries,
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
