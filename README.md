@@ -9,7 +9,7 @@ Next.js 16, Supabase, PWA (bisa di-install, kalkulator jalan offline, Web Push),
 npm install
 cp .env.example .env.local   # isi sesuai langkah di bawah
 npm run dev                  # http://localhost:3000
-npm test                     # 105 tes (engine, landing, kalkulator, roda, tempat, bottom nav, hub, footer)
+npm test                     # 142 tes (engine, landing, kalkulator, roda, tempat, room, bottom nav, hub, footer)
 ```
 
 Tanpa `.env.local` pun aplikasi jalan: **kalkulator `/calculator` tidak butuh Supabase**.
@@ -18,7 +18,7 @@ Fitur room (`/new`, `/h/<kode>`) menampilkan pesan "Supabase belum dikonfigurasi
 ## 1. Supabase
 
 1. Buat project baru di supabase.com.
-2. SQL Editor > jalankan **berurutan**: `supabase/migrations/0001_init.sql`, lalu `0002_push_rpc.sql`.
+2. SQL Editor > jalankan **berurutan**: `supabase/migrations/0001_init.sql`, `0002_push_rpc.sql`, lalu `0003_room_place.sql`.
 3. Authentication > Sign In / Providers > aktifkan **Allow anonymous sign-ins**.
 4. (Disarankan) Authentication > Attack Protection > aktifkan **CAPTCHA (Turnstile)**, lalu isi
    `NEXT_PUBLIC_TURNSTILE_SITE_KEY`. Tanpa CAPTCHA, siapa pun bisa membuat akun anonim sebanyak-banyaknya.
@@ -93,6 +93,11 @@ Sans (self-host di `public/fonts`, lisensi SIL OFL). Token ada di `src/app/globa
   (`/calculator?place=ID`); kalkulator juga punya pemilih tempat. "Putar roda" memilih dari daftar yang
   sedang tampil: lebar irisan sebanding bobot (tempat yang lama tidak dikunjungi irisannya lebih besar),
   jadi yang tampak di roda memang yang menentukan peluangnya.
+- `/h/<kode>` (room): kehadiran (Ikut, Mungkin, Tidak), peserta, dan undi tempat bareng-bareng. Siapa pun
+  boleh memutar; undian diundi di SERVER (`do_spin`) jadi semua orang melihat hasil yang sama. Peserta
+  boleh veto sekali per undian, host yang menerima (`accept_spin`). Tempat terpilih tersimpan di hangout
+  (`place_label`, `place_meta`, migrasi 0003) dan tombol "Hitung patungan di sini" membuka kalkulator
+  dengan service dan pajaknya terisi.
 - `/hangouts`: daftar hangout milikmu, buat baru, dan gabung dengan kode.
 - Responsif: halaman sudah dicek tanpa overflow horizontal di lebar 320, 360, dan 390px. Kolom isian
   memakai font 16px di mobile supaya iOS tidak memperbesar layar saat fokus.
@@ -109,7 +114,7 @@ src/app/
 src/components/   SupabaseProvider (login anonim lazy), Room, PushToggle, InstallPrompt, calculator/
 src/lib/engine/   split.ts, settle.ts, spin.ts (+ tes)   (logika uang, tanpa dependensi)
 src/lib/supabase/ klien & tipe
-supabase/migrations/  0001_init.sql, 0002_push_rpc.sql
+supabase/migrations/  0001_init.sql, 0002_push_rpc.sql, 0003_room_place.sql
 ```
 
 ## Catatan

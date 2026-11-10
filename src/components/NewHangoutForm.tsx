@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useSupabase } from '@/components/SupabaseProvider';
+import { errorMessage } from '@/lib/errors';
 
 export function NewHangoutForm() {
   const router = useRouter();
@@ -33,7 +34,7 @@ export function NewHangoutForm() {
       if (err) throw err;
       router.push(`/h/${data.invite_code}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Gagal membuat hangout');
+      setError(errorMessage(e, 'Gagal membuat hangout'));
       setBusy(false);
     }
   }

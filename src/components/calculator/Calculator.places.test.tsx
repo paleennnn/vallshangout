@@ -55,3 +55,22 @@ describe('<Calculator /> dengan tempat tersimpan', () => {
     expect(link.getAttribute('href')).toBe('/places');
   });
 });
+
+describe('<Calculator /> dari room (?title=&service=&tax=&onservice=)', () => {
+  it('mengisi nama, service, pajak, dan dasar pajak lalu membersihkan URL', () => {
+    window.history.replaceState(null, '', '/calculator?title=Warung%20Baru&service=0&tax=11&onservice=0');
+    render(<Calculator />);
+    expect(val('Nama acara')).toBe('Warung Baru');
+    expect(val('Service %')).toBe('0');
+    expect(val('Pajak %')).toBe('11');
+    expect((screen.getByLabelText(/Pajak dihitung dari/) as HTMLInputElement).checked).toBe(false);
+    expect(window.location.search).toBe('');
+  });
+
+  it('parameter sampah tidak mengubah apa pun', () => {
+    window.history.replaceState(null, '', '/calculator?service=999&tax=abc');
+    render(<Calculator />);
+    expect(val('Service %')).toBe('5');
+    expect(val('Pajak %')).toBe('10');
+  });
+});

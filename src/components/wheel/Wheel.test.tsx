@@ -88,3 +88,33 @@ describe('<Wheel />', () => {
     expect((screen.getByRole('button', { name: 'Putar roda' }) as HTMLButtonElement).disabled).toBe(true);
   });
 });
+
+describe('<Wheel /> spinTo (pemenang ditentukan pihak lain)', () => {
+  it('selalu melaporkan indeks yang diminta, bukan hasil acak lokal', async () => {
+    const { createRef } = await import('react');
+    const ref = createRef<import('./Wheel').WheelHandle>();
+    const onResult = vi.fn();
+    render(
+      <MotionRoot>
+        <Wheel ref={ref} labels={['A', 'B', 'C', 'D']} onResult={onResult} />
+      </MotionRoot>,
+    );
+    for (const i of [3, 0, 2, 1, 3]) ref.current!.spinTo(i);
+    expect(onResult.mock.calls.map(([x]) => x)).toEqual([3, 0, 2, 1, 3]);
+  });
+
+  it('indeks di luar rentang diabaikan', async () => {
+    const { createRef } = await import('react');
+    const ref = createRef<import('./Wheel').WheelHandle>();
+    const onResult = vi.fn();
+    render(
+      <MotionRoot>
+        <Wheel ref={ref} labels={['A', 'B']} onResult={onResult} />
+      </MotionRoot>,
+    );
+    ref.current!.spinTo(5);
+    ref.current!.spinTo(-1);
+    ref.current!.spinTo(0.5);
+    expect(onResult).not.toHaveBeenCalled();
+  });
+});
