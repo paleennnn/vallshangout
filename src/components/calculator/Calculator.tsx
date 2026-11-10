@@ -14,6 +14,7 @@ import {
 import { balancesFromBills, settleUp, settlementMessage, type Transfer } from '@/lib/engine/settle';
 import { loadPlaces, type Place } from '@/lib/places/store';
 import { MoneyInput } from './MoneyInput';
+import { patchFromParams } from './params';
 import {
   emptyState,
   exampleState,
@@ -94,12 +95,13 @@ export function Calculator() {
     const places = loadPlaces();
     setSavedPlaces(places);
     // Datang dari halaman Tempat (?place=ID): isi nama acara, service, dan pajak tempat itu
-    const wanted = new URLSearchParams(window.location.search).get('place');
+    const params = new URLSearchParams(window.location.search);
+    const wanted = params.get('place');
     const place = wanted ? places.find((p) => p.id === wanted) : undefined;
-    if (place) {
-      setState((s) => ({ ...s, ...placePatch(place) }));
-      window.history.replaceState(null, '', window.location.pathname);
-    }
+    // Dari room: ?title=...&service=...&tax=...&onservice=1 (tempat hasil undian, tanpa id lokal)
+    const fromUrl = place ? placePatch(place) : patchFromParams(params);
+    if (fromUrl) setState((s) => ({ ...s, ...fromUrl }));
+    if (place || fromUrl) window.history.replaceState(null, '', window.location.pathname);
     setPayInfo(localStorage.getItem('vh:payinfo') ?? '');
     setHydrated(true);
   }, []);

@@ -7,7 +7,10 @@ import { pickWeighted } from '@/lib/engine/random';
 export const MAX_WHEEL_OPTIONS = 20;
 
 export interface WheelHandle {
+  /** Putar dan tentukan pemenang di sisi klien (acak berbobot). */
   spin: () => void;
+  /** Putar lalu berhenti di `index` yang sudah ditentukan pihak lain (mis. undian server di room). */
+  spinTo: (index: number) => void;
 }
 
 interface WheelProps {
@@ -113,9 +116,10 @@ export const Wheel = forwardRef<WheelHandle, WheelProps>(function Wheel(
     }
   });
 
-  function spin() {
+  function spin(forced?: number) {
     if (spinningRef.current || n < 2) return;
-    const winner = pickWeighted(w);
+    if (forced !== undefined && !(Number.isInteger(forced) && forced >= 0 && forced < n)) return;
+    const winner = forced ?? pickWeighted(w);
     const target = targetRotation(bounds[winner], bounds[winner + 1], rotation.get());
     onSpinStart?.();
     if (reduce) {
@@ -134,7 +138,7 @@ export const Wheel = forwardRef<WheelHandle, WheelProps>(function Wheel(
     });
   }
 
-  useImperativeHandle(ref, () => ({ spin }));
+  useImperativeHandle(ref, () => ({ spin: () => spin(), spinTo: (index: number) => spin(index) }));
   const spinRef = useRef(spin);
   spinRef.current = spin;
 
@@ -196,7 +200,7 @@ export const Wheel = forwardRef<WheelHandle, WheelProps>(function Wheel(
 
       <button
         type="button"
-        onClick={spin}
+        onClick={() => spin()}
         disabled={spinning || n < 2}
         aria-label="Putar roda"
         className="absolute left-1/2 top-1/2 z-10 grid aspect-square w-[22%] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-4 border-cream bg-brand text-sm font-extrabold text-ink hover:bg-brand-hover disabled:cursor-default disabled:hover:bg-brand"
