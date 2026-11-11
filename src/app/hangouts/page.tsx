@@ -1,6 +1,13 @@
+import type { Metadata } from 'next';
 import { HangoutsHub } from '@/components/HangoutsHub';
 
-export const metadata = { title: 'Hangout' };
+export const metadata: Metadata = {
+  title: 'Hangout',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function HangoutsPage() {
   return (

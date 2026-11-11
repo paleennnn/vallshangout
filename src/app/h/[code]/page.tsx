@@ -1,7 +1,14 @@
+import type { Metadata } from 'next';
 import { BackButton } from '@/components/BackButton';
 import { Room } from '@/components/Room';
 
-export const metadata = { title: 'Room hangout' };
+export const metadata: Metadata = {
+  title: 'Room hangout',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function HangoutPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;

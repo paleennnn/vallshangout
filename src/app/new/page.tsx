@@ -1,6 +1,13 @@
+import type { Metadata } from 'next';
 import { NewHangoutForm } from '@/components/NewHangoutForm';
 
-export const metadata = { title: 'Hangout baru' };
+export const metadata: Metadata = {
+  title: 'Hangout baru',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function NewPage() {
   return (
