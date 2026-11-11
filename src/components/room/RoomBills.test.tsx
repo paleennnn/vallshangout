@@ -24,6 +24,7 @@ const h = vi.hoisted(() => {
       deleteBill: vi.fn(),
       createBill: vi.fn(),
       addItem: vi.fn(),
+      updateItem: vi.fn(),
       setTransferStatus: vi.fn(),
       replanTransfers: vi.fn(),
     },
@@ -351,5 +352,68 @@ describe('<RoomBills /> salin teks WhatsApp', () => {
     await waitFor(() => expect(prompt).toHaveBeenCalledTimes(1));
     expect(prompt.mock.calls[0][1]).toContain('*Malming*');
     prompt.mockRestore();
+  });
+});
+
+describe('<RoomBills /> ubah menu dan bagi rata', () => {
+  it('host mengubah menu: form terisi nilai lama, tersimpan lewat API, lalu form menutup', async () => {
+    setup({ me: host, isHost: true });
+    fireEvent.click(await screen.findByRole('button', { name: 'Ubah Steak' }));
+
+    const name = screen.getByLabelText('Nama menu') as HTMLInputElement;
+    expect(name.value).toBe('Steak');
+    expect((screen.getByLabelText('Harga satuan') as HTMLInputElement).value.replace(/\D/g, '')).toBe('50000');
+
+    fireEvent.change(name, { target: { value: 'Steak wagyu' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan menu' }));
+    await waitFor(() => expect(h.api.updateItem).toHaveBeenCalledWith(h.supabase, 'i1', { name: 'Steak wagyu', unitPrice: 50000, qty: 1 }));
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Simpan menu' })).toBeNull());
+  });
+
+  it('gagal menyimpan: form tetap terbuka dan galat tampil', async () => {
+    h.api.updateItem.mockRejectedValue(new Error('Menu tidak bisa diubah (mungkin tagihan sudah final).'));
+    setup({ me: host, isHost: true });
+    fireEvent.click(await screen.findByRole('button', { name: 'Ubah Steak' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan menu' }));
+    expect((await screen.findByText(/sudah final/)).getAttribute('role')).toBe('alert');
+    expect(screen.getByRole('button', { name: 'Simpan menu' })).toBeTruthy();
+  });
+
+  it('teman biasa tidak melihat tombol ubah menu', async () => {
+    setup();
+    await screen.findByText('Steak');
+    expect(screen.queryByRole('button', { name: /^Ubah / })).toBeNull();
+  });
+
+  it('host bisa membagi rata menu yang belum ditandai, lalu finalisasi membawa opsinya', async () => {
+    h.api.fetchBillsBundle.mockResolvedValue(bundle({ assignments: [mark('i1', 'p-host')] })); // Nasi goreng belum
+    setup({ me: host, isHost: true });
+
+    const finalize = (await screen.findByRole('button', { name: /Finalkan dan hitung transfer/ })) as HTMLButtonElement;
+    expect(finalize.disabled).toBe(true);
+
+    const box = screen.getByRole('checkbox', { name: /Bagi rata menu yang belum ditandai/ }) as HTMLInputElement;
+    expect(screen.getByText(/Dibagi sama rata ke 1 orang yang sudah menandai: Host/)).toBeTruthy();
+    fireEvent.click(box);
+
+    await waitFor(() => expect(finalize.disabled).toBe(false));
+    expect(screen.getByText(/Belum ditandai, dibagi rata saat difinalkan/)).toBeTruthy();
+    expect(screen.queryByText(/Belum ditandai siapa pun/)).toBeNull();
+
+    fireEvent.click(finalize);
+    await waitFor(() => expect(h.api.finalizeBill).toHaveBeenCalledTimes(1));
+    expect(h.api.finalizeBill.mock.calls[0][4]).toEqual({ shareUnassigned: true });
+  });
+
+  it('belum ada yang menandai: pilihan bagi rata nonaktif; teman biasa tidak melihatnya', async () => {
+    const { unmount } = setup({ me: host, isHost: true });
+    const box = (await screen.findByRole('checkbox', { name: /Bagi rata menu yang belum ditandai/ })) as HTMLInputElement;
+    expect(box.disabled).toBe(true);
+    expect(screen.getByText(/Menunggu sedikitnya satu orang menandai/)).toBeTruthy();
+    unmount();
+
+    setup();
+    await screen.findByText('Steak');
+    expect(screen.queryByRole('checkbox', { name: /Bagi rata/ })).toBeNull();
   });
 });

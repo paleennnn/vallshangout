@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { AssignmentRow, BillItemRow, BillRow, Participant } from '@/lib/supabase/types';
 import {
   billGrandTotal,
+  billMarkers,
   buildWhatsappText,
   createBill,
   finalizeBill,
@@ -11,6 +12,7 @@ import {
   replanTransfers,
   setAssignment,
   unassignedItems,
+  updateItem,
   validateItem,
   validateNewBill,
 } from './bills';
@@ -274,5 +276,72 @@ describe('buildWhatsappText', () => {
   it('tanpa hasil bagi (belum ada tagihan final): hanya judul dan transfer', () => {
     const text = plain(buildWhatsappText({ title: 'Malming', shares: [], transfers: [tr('p-b', 'p-a', 10000, 'pending')], nameOf }));
     expect(text).toBe('*Malming*\nYang perlu ditransfer:\n- Budi ke Aji: Rp 10.000');
+  });
+});
+
+describe('updateItem', () => {
+  it('menyimpan nama, harga, dan jumlah yang sudah dirapikan', async () => {
+    const { client, calls } = fakeClient({ bill_items: [{ id: 'i1' }] });
+    await updateItem(client, 'i1', { name: '  Steak  ', unitPrice: 55000, qty: 2 });
+    expect(calls.find((c) => c.op === 'update')!.args).toEqual([{ name: 'Steak', unit_price: 55000, qty: 2 }]);
+    expect(calls.find((c) => c.op === 'eq')!.args).toEqual(['id', 'i1']);
+  });
+
+  it('menolak input salah sebelum menyentuh jaringan', async () => {
+    const { client, calls } = fakeClient({});
+    await expect(updateItem(client, 'i1', { name: '', unitPrice: 1000, qty: 1 })).rejects.toThrow(/Nama menu/);
+    await expect(updateItem(client, 'i1', { name: 'A', unitPrice: 0, qty: 1 })).rejects.toThrow(/Harga/);
+    expect(calls).toHaveLength(0);
+  });
+
+  it('tidak ada baris berubah (mis. bill sudah final) memberi pesan yang jelas', async () => {
+    const { client } = fakeClient({ bill_items: [] });
+    await expect(updateItem(client, 'i1', { name: 'A', unitPrice: 1000, qty: 1 })).rejects.toThrow(/sudah final/);
+  });
+});
+
+describe('bagi rata menu yang belum ditandai', () => {
+  const three = [item('i1', 'Steak', 50000), item('i2', 'Nasi goreng', 30000), item('i3', 'Kentang', 20000)];
+  const marks = [mark('i1', 'p-a'), mark('i2', 'p-b')]; // Kentang belum ditandai
+
+  it('penanda = orang yang sudah menandai sesuatu, tanpa duplikat', () => {
+    expect(billMarkers([mark('i1', 'p-a'), mark('i2', 'p-a'), mark('i2', 'p-b')])).toEqual(['p-a', 'p-b']);
+    expect(billMarkers([])).toEqual([]);
+  });
+
+  it('tanpa opsi, menu yang belum ditandai tetap menghalangi', () => {
+    expect(previewShares(bill, three, marks).ok).toBe(false);
+  });
+
+  it('dengan opsi, menu itu dibagi sama rata ke yang sudah menandai dan jumlahnya tetap pas', () => {
+    const r = previewShares(bill, three, marks, { shareUnassigned: true });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      const by = Object.fromEntries(r.result.shares.map((s) => [s.participantId, s.subtotal]));
+      expect(by).toEqual({ 'p-a': 50000 + 10000, 'p-b': 30000 + 10000 });
+      expect(r.result.shares.reduce((a, s) => a + s.total, 0)).toBe(billGrandTotal(bill, three));
+    }
+  });
+
+  it('tidak ada yang menandai sama sekali: tetap tidak bisa', async () => {
+    expect(previewShares(bill, three, [], { shareUnassigned: true }).ok).toBe(false);
+    const { client, rpc } = fakeClient({});
+    await expect(finalizeBill(client, bill, three, [], { shareUnassigned: true })).rejects.toThrow(/dibagi rata/);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('finalisasi dengan opsi mengirim hasil bagi rata ke server', async () => {
+    const { client, rpc } = fakeClient({ hangout_balances: [], transfers: [] });
+    await finalizeBill(client, bill, three, marks, { shareUnassigned: true });
+    const [name, args] = rpc.mock.calls[0] as [string, { p_shares: { participant_id: string; subtotal: number; total: number }[] }];
+    expect(name).toBe('finalize_bill');
+    expect(Object.fromEntries(args.p_shares.map((s) => [s.participant_id, s.subtotal]))).toEqual({ 'p-a': 60000, 'p-b': 40000 });
+    expect(args.p_shares.reduce((a, s) => a + s.total, 0)).toBe(100000 + 4000 + 8400);
+  });
+
+  it('tanpa opsi, finalisasi tetap ditolak sebelum menyentuh server', async () => {
+    const { client, rpc } = fakeClient({});
+    await expect(finalizeBill(client, bill, three, marks)).rejects.toThrow(/Kentang/);
+    expect(rpc).not.toHaveBeenCalled();
   });
 });

@@ -166,6 +166,18 @@ export async function addItem(
   return check(res, 'Gagal menambah menu') as BillItemRow;
 }
 
+export async function updateItem(sb: SupabaseClient, itemId: string, input: NewItemInput): Promise<void> {
+  const problem = validateItem(input);
+  if (problem) throw new Error(problem);
+  const res = await sb
+    .from('bill_items')
+    .update({ name: input.name.trim(), unit_price: input.unitPrice, qty: input.qty })
+    .eq('id', itemId)
+    .select('id');
+  const rows = check(res, 'Gagal mengubah menu') as { id: string }[] | null;
+  if (!rows || rows.length === 0) throw new Error('Menu tidak bisa diubah (mungkin tagihan sudah final).');
+}
+
 export async function deleteItem(sb: SupabaseClient, itemId: string): Promise<void> {
   check(await sb.from('bill_items').delete().eq('id', itemId), 'Gagal menghapus menu');
 }
@@ -216,6 +228,22 @@ export function unassignedItems(items: BillItemRow[], assignments: AssignmentRow
   return items.filter((it) => !marked.has(it.id));
 }
 
+/** Peserta yang sudah menandai sedikitnya satu menu di tagihan ini (urutan kemunculan). */
+export function billMarkers(assignments: AssignmentRow[]): string[] {
+  return [...new Set(assignments.map((a) => a.participant_id))];
+}
+
+export interface ShareOptions {
+  /** Bagi rata menu yang belum ditandai ke semua orang yang sudah menandai sesuatu. */
+  shareUnassigned?: boolean;
+}
+
+function engineOptions(assignments: AssignmentRow[], opts?: ShareOptions) {
+  return opts?.shareUnassigned
+    ? { onUnassigned: 'everyone' as const, participantIds: billMarkers(assignments) }
+    : {};
+}
+
 export function toEngineBill(bill: BillRow, items: BillItemRow[], assignments: AssignmentRow[]): Bill {
   return {
     items: items.map((it) => ({
@@ -235,10 +263,18 @@ export function toEngineBill(bill: BillRow, items: BillItemRow[], assignments: A
 }
 
 /** Pratinjau pembagian; mengembalikan pesan galat berbahasa Indonesia bila belum bisa dihitung. */
-export function previewShares(bill: BillRow, items: BillItemRow[], assignments: AssignmentRow[]) {
+export function previewShares(
+  bill: BillRow,
+  items: BillItemRow[],
+  assignments: AssignmentRow[],
+  opts?: ShareOptions,
+) {
   if (items.length === 0) return { ok: false as const, message: 'Belum ada menu di tagihan ini.' };
   try {
-    return { ok: true as const, result: computeBillShares(toEngineBill(bill, items, assignments)) };
+    return {
+      ok: true as const,
+      result: computeBillShares(toEngineBill(bill, items, assignments), engineOptions(assignments, opts)),
+    };
   } catch (e) {
     return { ok: false as const, message: e instanceof SplitError ? e.message : 'Gagal menghitung pembagian.' };
   }
@@ -288,14 +324,22 @@ export async function finalizeBill(
   bill: BillRow,
   items: BillItemRow[],
   assignments: AssignmentRow[],
+  opts?: ShareOptions,
 ): Promise<void> {
   const missing = unassignedItems(items, assignments);
   if (missing.length > 0) {
-    throw new Error(`Masih ada menu yang belum ditandai: ${missing.map((m) => m.name).join(', ')}.`);
+    if (!opts?.shareUnassigned) {
+      throw new Error(`Masih ada menu yang belum ditandai: ${missing.map((m) => m.name).join(', ')}.`);
+    }
+    if (billMarkers(assignments).length === 0) {
+      throw new Error('Belum ada yang menandai menu apa pun, jadi menu tidak bisa dibagi rata.');
+    }
   }
   let payload;
   try {
-    payload = toFinalizePayload(computeBillShares(toEngineBill(bill, items, assignments)).shares);
+    payload = toFinalizePayload(
+      computeBillShares(toEngineBill(bill, items, assignments), engineOptions(assignments, opts)).shares,
+    );
   } catch (e) {
     throw new Error(e instanceof SplitError ? e.message : 'Gagal menghitung pembagian.');
   }
