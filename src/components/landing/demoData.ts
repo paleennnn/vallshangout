@@ -23,9 +23,9 @@ const INK = '#292524';
 
 // Adegan 1 & 2: satu struk, tiga orang
 export const PEOPLE3: DemoPerson[] = [
-  { id: 'f', name: 'Febyan', color: '#F97316', ink: INK },
-  { id: 'b', name: 'Budi', color: '#2DD4BF', ink: INK },
-  { id: 's', name: 'Siti', color: '#FACC15', ink: INK },
+  { id: 'f', name: 'Valen', color: '#F97316', ink: INK },
+  { id: 'b', name: 'Bio', color: '#2DD4BF', ink: INK },
+  { id: 's', name: 'Bubub', color: '#FACC15', ink: INK },
 ];
 
 const itemDefs = [
@@ -91,10 +91,10 @@ export const MAX_TOTAL = Math.max(...BARS.map((b) => b.total), EQUAL_SHARE);
 
 // Adegan 3: seminggu, 3 tempat, gantian talangin
 export const PEOPLE4: (DemoPerson & { x: number; y: number })[] = [
-  { id: 'f', name: 'Febyan', color: '#F97316', ink: INK, x: 210, y: 48 },
-  { id: 'b', name: 'Budi', color: '#2DD4BF', ink: INK, x: 372, y: 150 },
-  { id: 's', name: 'Siti', color: '#FACC15', ink: INK, x: 210, y: 252 },
-  { id: 'd', name: 'Dimas', color: '#FFF7ED', ink: INK, x: 48, y: 150 },
+  { id: 'f', name: 'Valen', color: '#F97316', ink: INK, x: 210, y: 48 },
+  { id: 'b', name: 'Bio', color: '#2DD4BF', ink: INK, x: 372, y: 150 },
+  { id: 's', name: 'Bubub', color: '#FACC15', ink: INK, x: 210, y: 252 },
+  { id: 'd', name: 'Anomali', color: '#FFF7ED', ink: INK, x: 48, y: 150 },
 ];
 
 interface MultiBill {
