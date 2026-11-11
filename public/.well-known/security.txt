@@ -1,0 +1,6 @@
+# VallsHangout Security Disclosure
+Contact: mailto:vfebyan@gmail.com
+Expires: 2027-11-11T00:00:00.000Z
+Preferred-Languages: id, en
+Canonical: https://vallshangout.vercel.app/.well-known/security.txt
+
