@@ -105,22 +105,32 @@ export function PushToggle() {
   };
 
   return (
-    <div className="space-y-2">
+    <>
       {state === 'off' && (
-        <button type="button" onClick={enable} className="inline-flex items-center gap-2 rounded-control bg-sand px-4 py-2 text-sm font-semibold hover:bg-sand-strong">
+        <button
+          type="button"
+          onClick={enable}
+          className="inline-flex h-11 items-center gap-2 rounded-control bg-sand px-4 text-sm font-semibold hover:bg-sand-strong"
+        >
           <Bell size={16} aria-hidden="true" />
           Aktifkan notifikasi
         </button>
       )}
       {state === 'on' && (
-        <button type="button" onClick={disable} className="inline-flex items-center gap-2 rounded-control bg-sand px-4 py-2 text-sm font-semibold hover:bg-sand-strong">
+        <button
+          type="button"
+          onClick={disable}
+          className="inline-flex h-11 items-center gap-2 rounded-control bg-sand px-4 text-sm font-semibold hover:bg-sand-strong"
+        >
           <BellOff size={16} aria-hidden="true" />
           Matikan notifikasi
         </button>
       )}
-      {(state === 'busy' || state === 'checking') && <p className="text-sm text-muted">Memeriksa…</p>}
-      {hints[state] && <p className="text-sm text-muted">{hints[state]}</p>}
-      {message && <p className="text-sm text-danger">{message}</p>}
-    </div>
+      {(state === 'busy' || state === 'checking') && (
+        <span className="inline-flex h-11 items-center px-1 text-sm text-muted">Memeriksa…</span>
+      )}
+      {hints[state] && <p className="basis-full text-sm text-muted">{hints[state]}</p>}
+      {message && <p className="basis-full text-sm text-danger">{message}</p>}
+    </>
   );
 }

@@ -128,4 +128,13 @@ describe('<JoinedRoom />', () => {
     setup();
     expect((await screen.findByRole('alert')).textContent).toMatch(/jaringan putus/);
   });
+
+  it('tombol/status notifikasi ditempatkan tepat di sebelah tombol bagikan link undangan di atas', async () => {
+    setup();
+    const shareBtn = await screen.findByRole('button', { name: /Bagikan link undangan/ });
+    const pushInfo = await screen.findByText(/notifikasi/i);
+    expect(shareBtn.parentElement).toBe(pushInfo.parentElement);
+    const rsvp = screen.getByRole('heading', { name: 'Kamu ikut?' });
+    expect(pushInfo.compareDocumentPosition(rsvp) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
 });

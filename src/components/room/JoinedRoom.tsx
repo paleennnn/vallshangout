@@ -101,14 +101,17 @@ export function JoinedRoom({ initial }: { initial: Hangout }) {
         <p className="font-mono text-sm tracking-widest text-muted">{hangout.invite_code}</p>
       </div>
 
-      <button
-        type="button"
-        onClick={copyLink}
-        className="inline-flex h-11 items-center gap-2 rounded-control bg-sand px-4 text-sm font-semibold hover:bg-sand-strong"
-      >
-        {copied ? <Check size={16} aria-hidden="true" /> : <Link2 size={16} aria-hidden="true" />}
-        {copied ? 'Tersalin' : 'Bagikan link undangan'}
-      </button>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={copyLink}
+          className="inline-flex h-11 items-center gap-2 rounded-control bg-sand px-4 text-sm font-semibold hover:bg-sand-strong"
+        >
+          {copied ? <Check size={16} aria-hidden="true" /> : <Link2 size={16} aria-hidden="true" />}
+          {copied ? 'Tersalin' : 'Bagikan link undangan'}
+        </button>
+        <PushToggle />
+      </div>
 
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}
 
@@ -157,8 +160,6 @@ export function JoinedRoom({ initial }: { initial: Hangout }) {
           ))}
         </ul>
       </section>
-
-      <PushToggle />
     </div>
   );
 }
