@@ -126,6 +126,8 @@ export function RoomBills({
       {(hasFinal || data.transfers.length > 0) && (
         <TransfersPanel
           hangoutId={hangoutId}
+          title={hangout.title}
+          shares={data.shares}
           transfers={data.transfers}
           participants={participants}
           me={me}

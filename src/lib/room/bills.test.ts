@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { AssignmentRow, BillItemRow, BillRow, Participant } from '@/lib/supabase/types';
 import {
   billGrandTotal,
+  buildWhatsappText,
   createBill,
   finalizeBill,
   markableParticipants,
@@ -206,5 +207,72 @@ describe('finalizeBill', () => {
       .mockResolvedValueOnce({ data: null, error: { message: 'rencana transfer tidak melunasi semua saldo' } });
     const { client } = fakeClient({ hangout_balances: [], transfers: [] }, rpc);
     await expect(finalizeBill(client, bill, items, [mark('i1', 'p-a'), mark('i2', 'p-b')])).rejects.toThrow(/sudah final, tetapi rencana transfer/);
+  });
+});
+
+describe('buildWhatsappText', () => {
+  // formatIDR memakai spasi tak terputus setelah "Rp" (sama seperti pesan di kalkulator)
+  const plain = (s: string) => s.replace(/\u00a0/g, ' ');
+  const names: Record<string, string> = { 'p-a': 'Aji', 'p-b': 'Budi', 'p-c': 'Citra' };
+  const nameOf = (id: string) => names[id] ?? '?';
+  const tr = (from: string, to: string, amount: number, status: 'pending' | 'paid' | 'confirmed') => ({
+    from_participant: from,
+    to_participant: to,
+    amount,
+    status,
+  });
+
+  it('judul, total, bagian tiap orang (dijumlah antar tagihan), lalu transfer, dan info bayar', () => {
+    const text = plain(buildWhatsappText({
+      title: 'Malming',
+      shares: [
+        { participant_id: 'p-a', total: 50000 },
+        { participant_id: 'p-b', total: 30000 },
+        { participant_id: 'p-b', total: 20000 }, // tagihan kedua
+      ],
+      transfers: [tr('p-b', 'p-a', 50000, 'pending')],
+      nameOf,
+      payInfo: '  DANA 0812xxxx a.n. Aji ',
+    }));
+    expect(text).toBe(
+      [
+        '*Malming*',
+        'Total Rp 100.000',
+        '- Aji: Rp 50.000',
+        '- Budi: Rp 50.000',
+        '',
+        'Yang perlu ditransfer:',
+        '- Budi ke Aji: Rp 50.000',
+        '',
+        'Bayar ke: DANA 0812xxxx a.n. Aji',
+      ].join('\n'),
+    );
+  });
+
+  it('transfer yang sudah dikonfirmasi tidak ikut; yang paid (menunggu konfirmasi) tetap ikut', () => {
+    const text = plain(buildWhatsappText({
+      title: 'Malming',
+      shares: [{ participant_id: 'p-a', total: 90000 }],
+      transfers: [tr('p-b', 'p-a', 30000, 'confirmed'), tr('p-c', 'p-a', 60000, 'paid')],
+      nameOf,
+    }));
+    expect(text).toContain('- Citra ke Aji: Rp 60.000');
+    expect(text).not.toContain('Budi ke Aji');
+    expect(text).not.toContain('Bayar ke');
+  });
+
+  it('semua transfer sudah dikonfirmasi: "Semua sudah impas."', () => {
+    const text = buildWhatsappText({
+      title: 'Malming',
+      shares: [{ participant_id: 'p-a', total: 30000 }],
+      transfers: [tr('p-b', 'p-a', 30000, 'confirmed')],
+      nameOf,
+    });
+    expect(text.split('\n').at(-1)).toBe('Semua sudah impas.');
+  });
+
+  it('tanpa hasil bagi (belum ada tagihan final): hanya judul dan transfer', () => {
+    const text = plain(buildWhatsappText({ title: 'Malming', shares: [], transfers: [tr('p-b', 'p-a', 10000, 'pending')], nameOf }));
+    expect(text).toBe('*Malming*\nYang perlu ditransfer:\n- Budi ke Aji: Rp 10.000');
   });
 });

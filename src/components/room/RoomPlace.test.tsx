@@ -16,7 +16,7 @@ vi.mock('@/lib/room/api', async (orig) => ({ ...(await orig<typeof import('@/lib
 
 import { MotionRoot } from '@/components/MotionRoot';
 import { PLACES_KEY, SAMPLE_PLACES, createPlace } from '@/lib/places/store';
-import { RoomPlace, calculatorHref } from './RoomPlace';
+import { RoomPlace } from './RoomPlace';
 
 beforeAll(() => {
   window.matchMedia = ((query: string) => ({
@@ -85,16 +85,6 @@ function setup(props: Partial<React.ComponentProps<typeof RoomPlace>> = {}) {
   return { onChanged };
 }
 
-describe('calculatorHref', () => {
-  it('membawa nama dan angka tempat, dan bisa dibaca balik oleh kalkulator', () => {
-    const href = calculatorHref('Cafe A & Bar', meta);
-    const q = new URLSearchParams(href.split('?')[1]);
-    expect(q.get('title')).toBe('Cafe A & Bar');
-    expect([q.get('service'), q.get('tax'), q.get('onservice')]).toEqual(['5', '10', '1']);
-    expect(calculatorHref('X', null)).toBe('/calculator?title=X');
-  });
-});
-
 describe('<RoomPlace /> tanpa tempat', () => {
   it('menawarkan undi tempat untuk anggota; peserta tanpa baris (belum jadi peserta) tidak bisa', () => {
     setup();
@@ -108,12 +98,12 @@ describe('<RoomPlace /> tanpa tempat', () => {
 describe('<RoomPlace /> tempat sudah terpilih', () => {
   const chosen = hangout({ place_label: 'Cafe A', place_meta: meta });
 
-  it('menampilkan nama, service/pajak, dan tautan kalkulator berisi angkanya', () => {
+  it('menampilkan nama dan service/pajak, tanpa tautan ke kalkulator (patungan dihitung di kartu Patungan)', () => {
     setup({ hangout: chosen });
     expect(screen.getByText('Cafe A')).toBeTruthy();
     expect(screen.getByText(/Service 5%, pajak 10% \(dari subtotal \+ service\)/)).toBeTruthy();
-    const href = screen.getByRole('link', { name: /Hitung patungan di sini/ }).getAttribute('href')!;
-    expect(new URLSearchParams(href.split('?')[1]).get('service')).toBe('5');
+    expect(screen.queryByRole('link', { name: /Hitung patungan/ })).toBeNull();
+    expect(document.querySelector('a[href^="/calculator"]')).toBeNull();
   });
 
   it('hanya host yang melihat Undi ulang dan Kosongkan; Kosongkan memanggil API lalu menyegarkan', async () => {

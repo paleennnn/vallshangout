@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { ArrowRight, RefreshCw } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowRight, Check, Copy, RefreshCw } from 'lucide-react';
+import { ThankYouModal } from '@/components/calculator/ThankYouModal';
 import { useSupabase } from '@/components/SupabaseProvider';
 import { errorMessage } from '@/lib/errors';
 import { formatIDR } from '@/lib/engine/split';
-import { replanTransfers, setTransferStatus } from '@/lib/room/bills';
-import type { Participant, TransferRow } from '@/lib/supabase/types';
-import { secondary } from './ui';
+import { buildWhatsappText, replanTransfers, setTransferStatus } from '@/lib/room/bills';
+import type { BillShareRow, Participant, TransferRow } from '@/lib/supabase/types';
+import { field, primary, secondary } from './ui';
 
 const STATUS_LABEL: Record<TransferRow['status'], string> = {
   pending: 'Belum transfer',
@@ -25,6 +26,8 @@ const small = 'inline-flex h-11 items-center justify-center rounded-control bg-s
 /** Rencana "siapa transfer ke siapa" untuk seluruh hangout, lengkap dengan status bayar. */
 export function TransfersPanel({
   hangoutId,
+  title,
+  shares,
   transfers,
   participants,
   me,
@@ -32,6 +35,10 @@ export function TransfersPanel({
   onChanged,
 }: {
   hangoutId: string;
+  /** Judul di baris pertama teks WhatsApp. */
+  title: string;
+  /** Hasil bagi semua tagihan final (bill_shares hanya ada untuk tagihan final). */
+  shares: BillShareRow[];
   transfers: TransferRow[];
   participants: Participant[];
   me: Participant | undefined;
@@ -41,6 +48,11 @@ export function TransfersPanel({
   const { supabase } = useSupabase();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [payInfo, setPayInfo] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [thanks, setThanks] = useState(false);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(copiedTimer.current), []);
   const nameOf = (id: string) => participants.find((p) => p.id === id)?.name ?? 'seseorang';
 
   async function run(action: () => Promise<void>) {
@@ -55,6 +67,19 @@ export function TransfersPanel({
       setBusy(false);
       onChanged();
     }
+  }
+
+  async function copyText() {
+    const text = buildWhatsappText({ title, shares, transfers, nameOf, payInfo });
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      window.prompt('Salin teks ini:', text);
+    }
+    setCopied(true);
+    clearTimeout(copiedTimer.current);
+    copiedTimer.current = setTimeout(() => setCopied(false), 1500);
+    setThanks(true);
   }
 
   const set = (t: TransferRow, status: TransferRow['status']) => run(() => setTransferStatus(supabase!, t.id, status));
@@ -98,6 +123,21 @@ export function TransfersPanel({
         </ul>
       )}
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}
+
+      <input
+        value={payInfo}
+        onChange={(e) => setPayInfo(e.target.value)}
+        maxLength={120}
+        placeholder="Info bayar (mis. DANA 0812xxxx a.n. Febyan)"
+        aria-label="Info bayar"
+        className={`${field} text-sm`}
+      />
+      <button type="button" className={`${primary} w-full`} onClick={copyText}>
+        {copied ? <Check size={18} aria-hidden="true" /> : <Copy size={18} aria-hidden="true" />}
+        {copied ? 'Tersalin' : 'Salin teks untuk WhatsApp'}
+      </button>
+      <ThankYouModal isOpen={thanks} onClose={() => setThanks(false)} />
+
       <button type="button" className={`${secondary} w-full`} disabled={busy} onClick={() => run(() => replanTransfers(supabase!, hangoutId))}>
         <RefreshCw size={16} aria-hidden="true" />
         Hitung ulang transfer
