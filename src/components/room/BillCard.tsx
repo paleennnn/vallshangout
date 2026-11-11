@@ -8,6 +8,7 @@ import { formatIDR } from '@/lib/engine/split';
 import {
   addItem,
   billGrandTotal,
+  billMarkers,
   billSubtotal,
   deleteBill,
   deleteItem,
@@ -17,11 +18,12 @@ import {
   reopenBill,
   unassignedItems,
   updateBill,
+  updateItem,
   type BillChargesPatch,
 } from '@/lib/room/bills';
 import type { AssignmentRow, BillItemRow, BillRow, BillShareRow, Participant } from '@/lib/supabase/types';
 import { BillChargesEditor } from './BillCharges';
-import { AddItemForm, ItemRow } from './BillItems';
+import { ItemForm, ItemRow } from './BillItems';
 import { dangerBtn, field, fieldLabel, primary, secondary } from './ui';
 
 interface ShareLine {
@@ -89,6 +91,7 @@ export function BillCard({
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [shareRest, setShareRest] = useState(false);
   const [activeId, setActiveId] = useState<string | undefined>(me?.id);
 
   const nameOf = (id: string) => participants.find((p) => p.id === id)?.name ?? 'seseorang';
@@ -99,16 +102,24 @@ export function BillCard({
   const subtotal = billSubtotal(items);
   const grand = billGrandTotal(bill, items);
   const missing = unassignedItems(items, assignments);
-  const preview = useMemo(() => previewShares(bill, items, assignments), [bill, items, assignments]);
+  const markers = billMarkers(assignments);
+  const sharing = shareRest && missing.length > 0 && markers.length > 0;
+  const preview = useMemo(
+    () => previewShares(bill, items, assignments, { shareUnassigned: shareRest }),
+    [bill, items, assignments, shareRest],
+  );
 
-  async function run(action: () => Promise<void>) {
-    if (!supabase) return;
+  /** Menjalankan aksi; true bila berhasil (dipakai form agar hanya menutup saat sukses). */
+  async function run(action: () => Promise<void>): Promise<boolean> {
+    if (!supabase) return false;
     setBusy(true);
     setError(null);
     try {
       await action();
+      return true;
     } catch (e) {
       setError(errorMessage(e, 'Terjadi kesalahan'));
+      return false;
     } finally {
       setBusy(false);
       onChanged();
@@ -188,19 +199,22 @@ export function BillCard({
                     participants={participants}
                     active={active}
                     activeIsMe={!!active && active.id === me?.id}
-                    canDelete={canManage}
+                    canManage={canManage}
+                    sharedEvenly={sharing}
                     onSet={(n) => active && onMark(it.id, active.id, n)}
-                    onDelete={() => run(() => deleteItem(supabase!, it.id))}
+                    onEdit={(input) => run(() => updateItem(supabase!, it.id, input))}
+                    onDelete={() => void run(() => deleteItem(supabase!, it.id))}
                   />
                 ))}
               </ul>
 
               {me &&
                 (adding ? (
-                  <AddItemForm
+                  <ItemForm
+                    submitLabel="Tambah menu"
                     busy={busy}
                     onCancel={() => setAdding(false)}
-                    onAdd={(input) =>
+                    onSubmit={(input) =>
                       run(async () => {
                         const next = items.reduce((m, it) => Math.max(m, it.sort_order), -1) + 1;
                         await addItem(supabase!, bill.hangout_id, bill.id, input, next);
@@ -234,7 +248,9 @@ export function BillCard({
                 subtotal={subtotal}
                 defaultTaxOnService={defaultTaxOnService}
                 busy={busy}
-                onSave={(patch: BillChargesPatch) => run(() => updateBill(supabase!, bill.id, patch))}
+                onSave={async (patch: BillChargesPatch) => {
+                  await run(() => updateBill(supabase!, bill.id, patch));
+                }}
               />
             </details>
           )}
@@ -248,10 +264,29 @@ export function BillCard({
           {isDraft && !preview.ok && items.length > 0 && missing.length === 0 && (
             <p role="alert" className="text-sm text-warning">{preview.message}</p>
           )}
-          {isDraft && missing.length > 0 && (
+          {isDraft && missing.length > 0 && !sharing && (
             <p className="text-sm text-warning">
               Belum ditandai siapa pun: {missing.map((m) => m.name).join(', ')}.
             </p>
+          )}
+          {isDraft && missing.length > 0 && canManage && (
+            <label className="flex items-start gap-3 rounded-xl border border-line bg-surface p-3 text-sm">
+              <input
+                type="checkbox"
+                checked={shareRest}
+                disabled={markers.length === 0}
+                onChange={(e) => setShareRest(e.target.checked)}
+                className="mt-0.5 h-5 w-5 shrink-0 accent-brand"
+              />
+              <span>
+                <span className="font-medium">Bagi rata menu yang belum ditandai</span>
+                <span className="block text-muted">
+                  {markers.length === 0
+                    ? 'Menunggu sedikitnya satu orang menandai pesanannya.'
+                    : `Dibagi sama rata ke ${markers.length} orang yang sudah menandai: ${markers.map(nameOf).join(', ')}.`}
+                </span>
+              </span>
+            </label>
           )}
 
           {error && <p role="alert" className="text-sm text-danger">{error}</p>}
@@ -262,14 +297,14 @@ export function BillCard({
                 type="button"
                 className={`${primary} w-full`}
                 disabled={busy || !preview.ok}
-                onClick={() => run(() => finalizeBill(supabase!, bill, items, assignments))}
+                onClick={() => void run(() => finalizeBill(supabase!, bill, items, assignments, { shareUnassigned: shareRest }))}
               >
                 Finalkan dan hitung transfer
               </button>
               {confirmDelete ? (
                 <div className="grid grid-cols-2 gap-2">
                   <button type="button" className={secondary} onClick={() => setConfirmDelete(false)}>Batal</button>
-                  <button type="button" className={dangerBtn} disabled={busy} onClick={() => run(() => deleteBill(supabase!, bill.id))}>
+                  <button type="button" className={dangerBtn} disabled={busy} onClick={() => void run(() => deleteBill(supabase!, bill.id))}>
                     Ya, hapus
                   </button>
                 </div>
@@ -287,7 +322,7 @@ export function BillCard({
           )}
 
           {!isDraft && canManage && (
-            <button type="button" className={`${secondary} w-full`} disabled={busy} onClick={() => run(() => reopenBill(supabase!, bill))}>
+            <button type="button" className={`${secondary} w-full`} disabled={busy} onClick={() => void run(() => reopenBill(supabase!, bill))}>
               <LockOpen size={16} aria-hidden="true" />
               Buka kembali untuk diubah
             </button>
