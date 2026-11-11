@@ -302,3 +302,54 @@ describe('<RoomBills />', () => {
     expect((await screen.findByRole('alert')).textContent).toMatch(/jaringan putus/);
   });
 });
+
+describe('<RoomBills /> salin teks WhatsApp', () => {
+  const finalBill: BillRow = { ...draft, status: 'final' };
+  const finalBundle = () =>
+    bundle({
+      bills: [finalBill],
+      assignments: [mark('i1', 'p-host'), mark('i2', 'p-budi')],
+      shares: [
+        { bill_id: 'b1', participant_id: 'p-host', subtotal: 50000, service_amount: 0, tax_amount: 0, discount_amount: 0, rounding_amount: 0, total: 50000 },
+        { bill_id: 'b1', participant_id: 'p-budi', subtotal: 30000, service_amount: 0, tax_amount: 0, discount_amount: 0, rounding_amount: 0, total: 30000 },
+      ],
+      transfers: [
+        { id: 't1', from_participant: 'p-budi', to_participant: 'p-host', amount: 30000, status: 'pending' },
+        { id: 't2', from_participant: 'p-tamu', to_participant: 'p-host', amount: 5000, status: 'confirmed' },
+      ],
+    });
+
+  it('menyalin ringkasan dengan info bayar, hanya transfer yang belum lunas, lalu menampilkan modal terima kasih', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    h.api.fetchBillsBundle.mockResolvedValue(finalBundle());
+    setup();
+
+    fireEvent.change(await screen.findByLabelText('Info bayar'), { target: { value: 'DANA 0812xxxx a.n. Host' } });
+    fireEvent.click(screen.getByRole('button', { name: /Salin teks untuk WhatsApp/ }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    const text = (writeText.mock.calls[0][0] as string).replace(/\u00a0/g, ' ');
+    expect(text.split('\n')[0]).toBe('*Malming*');
+    expect(text).toContain('Total Rp 80.000');
+    expect(text).toContain('- Host: Rp 50.000');
+    expect(text).toContain('- Budi ke Host: Rp 30.000');
+    expect(text).not.toContain('Tamu ke Host');
+    expect(text).toContain('Bayar ke: DANA 0812xxxx a.n. Host');
+
+    expect(await screen.findByRole('button', { name: /Tersalin/ })).toBeTruthy();
+    expect(document.querySelector('dialog[aria-labelledby="thank-you-title"]')).toBeTruthy();
+  });
+
+  it('bila clipboard tidak tersedia, teks ditampilkan lewat prompt agar bisa disalin manual', async () => {
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: vi.fn().mockRejectedValue(new Error('denied')) }, configurable: true });
+    const prompt = vi.spyOn(window, 'prompt').mockReturnValue(null);
+    h.api.fetchBillsBundle.mockResolvedValue(finalBundle());
+    setup();
+
+    fireEvent.click(await screen.findByRole('button', { name: /Salin teks untuk WhatsApp/ }));
+    await waitFor(() => expect(prompt).toHaveBeenCalledTimes(1));
+    expect(prompt.mock.calls[0][1]).toContain('*Malming*');
+    prompt.mockRestore();
+  });
+});

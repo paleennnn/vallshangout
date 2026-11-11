@@ -2,12 +2,13 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   SplitError,
   computeBillShares,
+  formatIDR,
   computeCharges,
   toFinalizePayload,
   type Bill,
   type Money,
 } from '@/lib/engine/split';
-import { remainingBalances, settleUp, toTransfersPayload } from '@/lib/engine/settle';
+import { remainingBalances, settleUp, settlementMessage, toTransfersPayload } from '@/lib/engine/settle';
 import type {
   AssignmentRow,
   BillItemRow,
@@ -324,6 +325,48 @@ export async function setTransferStatus(
   const res = await sb.from('transfers').update({ status }).eq('id', transferId).select('id');
   const rows = check(res, 'Gagal mengubah status transfer') as { id: string }[] | null;
   if (!rows || rows.length === 0) throw new Error('Status transfer tidak bisa diubah.');
+}
+
+// ---------------------------------------------------------------------------
+// Teks untuk dibagikan
+// ---------------------------------------------------------------------------
+
+/**
+ * Teks siap tempel ke grup WhatsApp, formatnya sama dengan kalkulator: judul, total, bagian tiap
+ * orang (dijumlah dari semua tagihan final), lalu transfer yang belum dikonfirmasi lunas.
+ */
+export function buildWhatsappText(opts: {
+  title: string;
+  shares: Pick<BillShareRow, 'participant_id' | 'total'>[];
+  transfers: Pick<TransferRow, 'from_participant' | 'to_participant' | 'amount' | 'status'>[];
+  nameOf: (participantId: string) => string;
+  payInfo?: string;
+}): string {
+  const perPerson = new Map<string, number>();
+  for (const s of opts.shares) perPerson.set(s.participant_id, (perPerson.get(s.participant_id) ?? 0) + Number(s.total));
+  const total = [...perPerson.values()].reduce((a, b) => a + b, 0);
+
+  const head =
+    perPerson.size > 0
+      ? [
+          `*${opts.title}*`,
+          `Total ${formatIDR(total)}`,
+          ...[...perPerson].map(([id, t]) => `- ${opts.nameOf(id)}: ${formatIDR(t)}`),
+          '',
+        ]
+      : [];
+
+  return [
+    ...head,
+    settlementMessage({
+      ...(perPerson.size > 0 ? {} : { title: opts.title }),
+      transfers: opts.transfers
+        .filter((t) => t.status !== 'confirmed')
+        .map((t) => ({ from: t.from_participant, to: t.to_participant, amount: Number(t.amount) })),
+      nameOf: opts.nameOf,
+      payInfo: opts.payInfo?.trim() || undefined,
+    }),
+  ].join('\n');
 }
 
 // ---------------------------------------------------------------------------

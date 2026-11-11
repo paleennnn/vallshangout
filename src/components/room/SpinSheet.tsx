@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import { useSupabase } from '@/components/SupabaseProvider';
+import { MotionRoot } from '@/components/MotionRoot';
 import { Sheet } from '@/components/ui/Sheet';
-import { MAX_WHEEL_OPTIONS, Wheel, type WheelHandle } from '@/components/wheel/Wheel';
+import { MAX_WHEEL_LABEL, MAX_WHEEL_OPTIONS, Wheel, type WheelHandle } from '@/components/wheel/Wheel';
 import { buildSpinOptions } from '@/lib/engine/spin';
 import { startSpin, validateSpinOptions } from '@/lib/room/api';
 import { loadPlaces, toSpinStats } from '@/lib/places/store';
@@ -85,7 +86,7 @@ function Body({
   const toggle = (key: string) => setCands((cs) => cs.map((c) => (c.key === key ? { ...c, selected: !c.selected } : c)));
 
   function addCustom() {
-    const label = draft.trim().slice(0, 40);
+    const label = draft.trim().slice(0, MAX_WHEEL_LABEL);
     if (!label) return;
     if (cands.some((c) => c.label.toLowerCase() === label.toLowerCase())) return setError(`"${label}" sudah ada.`);
     if (cands.filter((c) => c.selected).length >= MAX_WHEEL_OPTIONS) return setError(`Maksimal ${MAX_WHEEL_OPTIONS} tempat.`);
@@ -204,7 +205,7 @@ function Body({
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          maxLength={40}
+          maxLength={MAX_WHEEL_LABEL}
           placeholder="Tambah nama tempat lain"
           aria-label="Nama tempat lain"
           enterKeyHint="done"
@@ -215,6 +216,12 @@ function Body({
           Tambah
         </button>
       </form>
+
+      {draft.length >= MAX_WHEEL_LABEL - 6 && (
+        <p className="-mt-2 text-right text-xs tabular-nums text-muted">
+          {draft.length}/{MAX_WHEEL_LABEL}
+        </p>
+      )}
 
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}
 
@@ -245,7 +252,10 @@ export function SpinSheet({
 }) {
   return (
     <Sheet open={open} onClose={onClose} title="Undi tempat">
-      <Body hangoutId={hangoutId} onStart={onStart} onFinish={onFinish} onClose={onClose} />
+      {/* Halaman room tidak dibungkus MotionRoot; tanpa ini roda tampak "memutar" tetapi tidak bergerak. */}
+      <MotionRoot>
+        <Body hangoutId={hangoutId} onStart={onStart} onFinish={onFinish} onClose={onClose} />
+      </MotionRoot>
     </Sheet>
   );
 }

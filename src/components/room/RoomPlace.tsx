@@ -1,8 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { useState } from 'react';
-import { Calculator, Check, LoaderPinwheel, RotateCw, Undo2, X } from 'lucide-react';
+import { Check, LoaderPinwheel, RotateCw, Undo2, X } from 'lucide-react';
 import { useSupabase } from '@/components/SupabaseProvider';
 import { acceptSpin, clearPlace, vetoSpin } from '@/lib/room/api';
 import type { Hangout, Participant, PlaceMeta, SpinState } from '@/lib/supabase/types';
@@ -10,17 +9,6 @@ import { SpinSheet } from './SpinSheet';
 
 const describe = (m: PlaceMeta) =>
   `Service ${m.service_pct}%, pajak ${m.tax_pct}% (${m.tax_on_service ? 'dari subtotal + service' : 'dari subtotal'})`;
-
-/** Tautan kalkulator yang terisi dengan angka tempat terpilih (lihat Calculator, parameter title/service/tax). */
-export function calculatorHref(label: string, meta?: PlaceMeta | null) {
-  const q = new URLSearchParams({ title: label });
-  if (meta) {
-    q.set('service', String(meta.service_pct));
-    q.set('tax', String(meta.tax_pct));
-    q.set('onservice', meta.tax_on_service ? '1' : '0');
-  }
-  return `/calculator?${q.toString()}`;
-}
 
 const btn = 'inline-flex h-11 items-center justify-center gap-2 rounded-control px-4 text-sm font-semibold';
 const secondary = `${btn} bg-sand hover:bg-sand-strong disabled:opacity-60`;
@@ -74,10 +62,6 @@ export function RoomPlace({
           <h3 className="text-2xl font-extrabold leading-tight tracking-tight">{hangout.place_label}</h3>
           {hangout.place_meta && <p className="mt-1 text-sm text-muted">{describe(hangout.place_meta)}</p>}
         </div>
-        <Link href={calculatorHref(hangout.place_label, hangout.place_meta)} className={`${primary} w-full`}>
-          <Calculator size={16} aria-hidden="true" />
-          Hitung patungan di sini
-        </Link>
         {isHost && (
           <div className="grid grid-cols-2 gap-2">
             <button type="button" className={secondary} onClick={() => setSheetOpen(true)}>

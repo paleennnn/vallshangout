@@ -5,6 +5,8 @@ import { animate, m, useMotionValue, useMotionValueEvent, useReducedMotion } fro
 import { pickWeighted } from '@/lib/engine/random';
 
 export const MAX_WHEEL_OPTIONS = 20;
+/** Panjang maksimal nama pilihan yang diketik; roda sendiri memotong tampilannya lebih pendek lagi. */
+export const MAX_WHEEL_LABEL = 24;
 
 export interface WheelHandle {
   /** Putar dan tentukan pemenang di sisi klien (acak berbobot). */

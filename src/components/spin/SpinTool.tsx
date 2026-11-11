@@ -2,12 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Plus, RotateCw, X } from 'lucide-react';
-import { MAX_WHEEL_OPTIONS, Wheel, type WheelHandle } from '@/components/wheel/Wheel';
+import { MAX_WHEEL_LABEL, MAX_WHEEL_OPTIONS, Wheel, type WheelHandle } from '@/components/wheel/Wheel';
 
 export const SPIN_STORAGE_KEY = 'vh:spin:v1';
 const SAMPLE = ['Cafe A', 'Billiard', 'Rental PS', 'Karaoke', 'Warung', 'Futsal'];
 const MAX_HISTORY = 8;
-const MAX_LABEL = 24;
 
 interface HistoryItem {
   label: string;
@@ -70,7 +69,7 @@ export function SpinTool() {
   }
 
   function addOption() {
-    const label = draft.trim().slice(0, MAX_LABEL);
+    const label = draft.trim().slice(0, MAX_WHEEL_LABEL);
     if (!label) return;
     if (options.length >= MAX_WHEEL_OPTIONS) return setNotice(`Maksimal ${MAX_WHEEL_OPTIONS} pilihan.`);
     if (options.some((o) => o.toLowerCase() === label.toLowerCase())) return setNotice(`"${label}" sudah ada di roda.`);
@@ -158,7 +157,7 @@ export function SpinTool() {
           <input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            maxLength={MAX_LABEL}
+            maxLength={MAX_WHEEL_LABEL}
             disabled={spinning}
             placeholder="Nama tempat atau pilihan"
             aria-label="Pilihan baru"
