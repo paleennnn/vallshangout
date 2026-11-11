@@ -5,6 +5,7 @@ import { useSupabase } from '@/components/SupabaseProvider';
 import { Sheet } from '@/components/ui/Sheet';
 import { errorMessage } from '@/lib/errors';
 import { createBill, validateNewBill } from '@/lib/room/bills';
+import { notifyRoom } from '@/lib/room/notify';
 import type { Hangout, Participant } from '@/lib/supabase/types';
 import { field, fieldLabel, primary } from './ui';
 
@@ -43,7 +44,8 @@ function Body({
     setBusy(true);
     setError(null);
     try {
-      await createBill(supabase, hangout.id, input);
+      const bill = await createBill(supabase, hangout.id, input);
+      void notifyRoom(supabase, hangout.id, 'bill_created', bill.id);
       onCreated();
     } catch (e) {
       setError(errorMessage(e, 'Gagal membuat tagihan'));

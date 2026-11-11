@@ -7,6 +7,7 @@ import { useSupabase } from '@/components/SupabaseProvider';
 import { errorMessage } from '@/lib/errors';
 import { formatIDR } from '@/lib/engine/split';
 import { buildWhatsappText, replanTransfers, setTransferStatus } from '@/lib/room/bills';
+import { notifyRoom } from '@/lib/room/notify';
 import type { BillShareRow, Participant, TransferRow } from '@/lib/supabase/types';
 import { field, primary, secondary } from './ui';
 
@@ -55,14 +56,16 @@ export function TransfersPanel({
   useEffect(() => () => clearTimeout(copiedTimer.current), []);
   const nameOf = (id: string) => participants.find((p) => p.id === id)?.name ?? 'seseorang';
 
-  async function run(action: () => Promise<void>) {
-    if (!supabase) return;
+  async function run(action: () => Promise<void>): Promise<boolean> {
+    if (!supabase) return false;
     setBusy(true);
     setError(null);
     try {
       await action();
+      return true;
     } catch (e) {
       setError(errorMessage(e, 'Terjadi kesalahan'));
+      return false;
     } finally {
       setBusy(false);
       onChanged();
@@ -82,7 +85,11 @@ export function TransfersPanel({
     setThanks(true);
   }
 
-  const set = (t: TransferRow, status: TransferRow['status']) => run(() => setTransferStatus(supabase!, t.id, status));
+  async function set(t: TransferRow, status: TransferRow['status']) {
+    const ok = await run(() => setTransferStatus(supabase!, t.id, status));
+    // Penerima perlu tahu ada transfer yang menunggu konfirmasinya
+    if (ok && status === 'paid') void notifyRoom(supabase!, hangoutId, 'transfer_paid', t.id);
+  }
 
   return (
     <div className="space-y-2">
@@ -138,7 +145,7 @@ export function TransfersPanel({
       </button>
       <ThankYouModal isOpen={thanks} onClose={() => setThanks(false)} />
 
-      <button type="button" className={`${secondary} w-full`} disabled={busy} onClick={() => run(() => replanTransfers(supabase!, hangoutId))}>
+      <button type="button" className={`${secondary} w-full`} disabled={busy} onClick={() => void run(() => replanTransfers(supabase!, hangoutId))}>
         <RefreshCw size={16} aria-hidden="true" />
         Hitung ulang transfer
       </button>

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { ChevronDown, ChevronUp, LockOpen, Plus } from 'lucide-react';
 import { useSupabase } from '@/components/SupabaseProvider';
 import { errorMessage } from '@/lib/errors';
+import { notifyRoom } from '@/lib/room/notify';
 import { formatIDR } from '@/lib/engine/split';
 import {
   addItem,
@@ -95,7 +96,10 @@ export function BillCard({
   const [activeId, setActiveId] = useState<string | undefined>(me?.id);
 
   const nameOf = (id: string) => participants.find((p) => p.id === id)?.name ?? 'seseorang';
-  const canManage = isHost || (!!me && bill.paid_by === me.id);
+  // Pengelola = host, yang membayar ke kasir, atau siapa pun peserta bila pembayarnya teman tanpa
+  // akun. Sama dengan private.can_manage_row di database (migrasi 0006).
+  const payer = participants.find((p) => p.id === bill.paid_by);
+  const canManage = isHost || (!!me && (bill.paid_by === me.id || payer?.user_id === null));
   const markable = markableParticipants(participants, me, isHost);
   const active = markable.find((p) => p.id === activeId) ?? markable.find((p) => p.id === me?.id) ?? markable[0];
 
@@ -297,7 +301,10 @@ export function BillCard({
                 type="button"
                 className={`${primary} w-full`}
                 disabled={busy || !preview.ok}
-                onClick={() => void run(() => finalizeBill(supabase!, bill, items, assignments, { shareUnassigned: shareRest }))}
+                onClick={async () => {
+                  const ok = await run(() => finalizeBill(supabase!, bill, items, assignments, { shareUnassigned: shareRest }));
+                  if (ok) void notifyRoom(supabase!, bill.hangout_id, 'bill_finalized', bill.id);
+                }}
               >
                 Finalkan dan hitung transfer
               </button>

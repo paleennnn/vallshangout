@@ -15,6 +15,7 @@ const h = vi.hoisted(() => {
   return {
     onCalls,
     supabase,
+    notify: vi.fn(),
     ctx: { supabase, session: { user: { id: 'u-budi' } }, restored: true, ensureSession: vi.fn() },
     api: {
       fetchBillsBundle: vi.fn(),
@@ -32,6 +33,7 @@ const h = vi.hoisted(() => {
 });
 vi.mock('@/components/SupabaseProvider', () => ({ useSupabase: () => h.ctx }));
 vi.mock('@/lib/room/bills', async (orig) => ({ ...(await orig<typeof import('@/lib/room/bills')>()), ...h.api }));
+vi.mock('@/lib/room/notify', () => ({ notifyRoom: h.notify }));
 
 import { RoomBills } from './RoomBills';
 
@@ -95,6 +97,7 @@ beforeEach(() => {
   h.onCalls.length = 0;
   h.supabase.channel.mockClear();
   h.supabase.removeChannel.mockClear();
+  h.notify.mockReset();
   for (const fn of Object.values(h.api)) fn.mockReset().mockResolvedValue(undefined);
   h.api.fetchBillsBundle.mockResolvedValue(bundle());
 });
@@ -415,5 +418,85 @@ describe('<RoomBills /> ubah menu dan bagi rata', () => {
     setup();
     await screen.findByText('Steak');
     expect(screen.queryByRole('checkbox', { name: /Bagi rata/ })).toBeNull();
+  });
+});
+
+describe('<RoomBills /> notifikasi push', () => {
+  it('membuat tagihan memberi tahu peserta lain', async () => {
+    h.api.fetchBillsBundle.mockResolvedValue(bundle({ bills: [], items: [] }));
+    h.api.createBill.mockResolvedValue({ ...draft, id: 'b-baru' });
+    setup();
+    fireEvent.click(await screen.findByRole('button', { name: /Buat tagihan baru/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Buat tagihan' }));
+    await waitFor(() => expect(h.notify).toHaveBeenCalledWith(h.supabase, 'h1', 'bill_created', 'b-baru'));
+  });
+
+  it('finalisasi berhasil memberi tahu; finalisasi gagal tidak', async () => {
+    h.api.fetchBillsBundle.mockResolvedValue(bundle({ assignments: [mark('i1', 'p-host'), mark('i2', 'p-budi')] }));
+    setup({ me: host, isHost: true });
+    fireEvent.click(await screen.findByRole('button', { name: /Finalkan dan hitung transfer/ }));
+    await waitFor(() => expect(h.notify).toHaveBeenCalledWith(h.supabase, 'h1', 'bill_finalized', 'b1'));
+    cleanup();
+
+    h.notify.mockReset();
+    h.api.finalizeBill.mockRejectedValue(new Error('gagal'));
+    setup({ me: host, isHost: true });
+    fireEvent.click(await screen.findByRole('button', { name: /Finalkan dan hitung transfer/ }));
+    await screen.findByText(/gagal/);
+    expect(h.notify).not.toHaveBeenCalled();
+  });
+
+  it('"Sudah transfer" memberi tahu penerima; konfirmasi diterima tidak mengirim notifikasi', async () => {
+    h.api.fetchBillsBundle.mockResolvedValue(
+      bundle({
+        bills: [{ ...draft, status: 'final' }],
+        transfers: [
+          { id: 't1', from_participant: 'p-budi', to_participant: 'p-host', amount: 34650, status: 'pending' },
+          { id: 't2', from_participant: 'p-tamu', to_participant: 'p-budi', amount: 10000, status: 'paid' },
+        ],
+      }),
+    );
+    setup();
+    const t1 = (await screen.findByText('Rp 34.650', { exact: false })).closest('li')!;
+    fireEvent.click(within(t1).getByRole('button', { name: 'Sudah transfer' }));
+    await waitFor(() => expect(h.notify).toHaveBeenCalledWith(h.supabase, 'h1', 'transfer_paid', 't1'));
+
+    h.notify.mockReset();
+    const t2 = screen.getByText('Rp 10.000', { exact: false }).closest('li')!;
+    fireEvent.click(within(t2).getByRole('button', { name: 'Konfirmasi diterima' }));
+    await waitFor(() => expect(h.api.setTransferStatus).toHaveBeenCalledWith(h.supabase, 't2', 'confirmed'));
+    expect(h.notify).not.toHaveBeenCalled();
+  });
+});
+
+describe('<RoomBills /> siapa yang mengelola tagihan', () => {
+  const marked = [mark('i1', 'p-host'), mark('i2', 'p-budi')];
+
+  it('pembayar teman tanpa akun: peserta mana pun bisa memfinalkan dan mengubah menu', async () => {
+    h.api.fetchBillsBundle.mockResolvedValue(bundle({ bills: [{ ...draft, paid_by: 'p-tamu' }], assignments: marked }));
+    setup(); // Budi, bukan host
+    expect(await screen.findByRole('button', { name: /Finalkan dan hitung transfer/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Ubah Steak' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Hapus tagihan' })).toBeTruthy();
+  });
+
+  it('pembayar adalah akunnya sendiri: pembayar mengelola, anggota lain tidak', async () => {
+    h.api.fetchBillsBundle.mockResolvedValue(bundle({ bills: [{ ...draft, paid_by: 'p-budi' }], assignments: marked }));
+    const { unmount } = setup(); // Budi = pembayar
+    expect(await screen.findByRole('button', { name: /Finalkan dan hitung transfer/ })).toBeTruthy();
+    unmount();
+
+    h.api.fetchBillsBundle.mockResolvedValue(bundle({ bills: [{ ...draft, paid_by: 'p-host' }], assignments: marked }));
+    setup(); // Budi bukan pembayar dan bukan host
+    await screen.findByText('Steak');
+    expect(screen.queryByRole('button', { name: /Finalkan dan hitung transfer/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Ubah Steak' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Hapus tagihan' })).toBeNull();
+  });
+
+  it('host selalu bisa mengelola, termasuk tagihan yang dibayar orang lain', async () => {
+    h.api.fetchBillsBundle.mockResolvedValue(bundle({ bills: [{ ...draft, paid_by: 'p-budi' }], assignments: marked }));
+    setup({ me: host, isHost: true });
+    expect(await screen.findByRole('button', { name: /Finalkan dan hitung transfer/ })).toBeTruthy();
   });
 });
