@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { describe, expect, it, vi } from 'vitest';
 import type { AssignmentRow, BillItemRow, BillRow, Participant } from '@/lib/supabase/types';
 import {
+  addItems,
   billGrandTotal,
   billMarkers,
   buildWhatsappText,
@@ -343,5 +344,51 @@ describe('bagi rata menu yang belum ditandai', () => {
     const { client, rpc } = fakeClient({});
     await expect(finalizeBill(client, bill, three, marks)).rejects.toThrow(/Kentang/);
     expect(rpc).not.toHaveBeenCalled();
+  });
+});
+
+describe('addItems', () => {
+  const rows = [
+    { name: '  Kopi  ', unitPrice: 25000, qty: 2 },
+    { name: 'Roti', unitPrice: 15000, qty: 1 },
+  ];
+
+  it('menyimpan semua menu dalam satu permintaan, dengan urutan berlanjut dan nama dirapikan', async () => {
+    const { client, calls } = fakeClient({ bill_items: [{ id: 'a' }, { id: 'b' }] });
+    const saved = await addItems(client, 'h1', 'b1', rows, 5, 2);
+    expect(saved).toHaveLength(2);
+    const inserts = calls.filter((c) => c.op === 'insert');
+    expect(inserts).toHaveLength(1);
+    expect(inserts[0].args[0]).toEqual([
+      { hangout_id: 'h1', bill_id: 'b1', name: 'Kopi', unit_price: 25000, qty: 2, sort_order: 5 },
+      { hangout_id: 'h1', bill_id: 'b1', name: 'Roti', unit_price: 15000, qty: 1, sort_order: 6 },
+    ]);
+  });
+
+  it('menolak daftar kosong dan input yang salah, menyebut nomor menunya, sebelum menyentuh jaringan', async () => {
+    const { client, calls } = fakeClient({});
+    await expect(addItems(client, 'h1', 'b1', [], 0)).rejects.toThrow(/Tidak ada menu/);
+    await expect(addItems(client, 'h1', 'b1', [rows[0], { name: '', unitPrice: 1000, qty: 1 }], 0)).rejects.toThrow(/Menu ke-2: Nama menu/);
+    await expect(addItems(client, 'h1', 'b1', [{ name: 'A', unitPrice: 0, qty: 1 }], 0)).rejects.toThrow(/Menu ke-1: Harga/);
+    expect(calls).toHaveLength(0);
+  });
+
+  it('batas jumlah menu per tagihan memperhitungkan menu yang sudah ada', async () => {
+    const { client, calls } = fakeClient({});
+    await expect(addItems(client, 'h1', 'b1', rows, 0, 59)).rejects.toThrow(/maksimal 60/);
+    expect(calls).toHaveLength(0);
+  });
+
+  it('galat dari server diteruskan', async () => {
+    const client = sb({
+      from: () => {
+        const q: Record<string, unknown> = {};
+        q.insert = () => q;
+        q.select = () => q;
+        q.then = (resolve: (v: unknown) => unknown) => resolve({ data: null, error: { message: 'new row violates row-level security policy' } });
+        return q;
+      },
+    });
+    await expect(addItems(client, 'h1', 'b1', rows, 0)).rejects.toThrow(/Gagal menyimpan menu: new row violates/);
   });
 });
