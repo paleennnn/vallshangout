@@ -13,6 +13,7 @@ export default function robots(): MetadataRoute.Robots {
           '/api/',
           '/new',
           '/hangouts',
+          '/lab/',
           '/~offline',
           '/serwist/',
         ],

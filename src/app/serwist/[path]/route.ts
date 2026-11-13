@@ -14,6 +14,8 @@ export const { dynamic, dynamicParams, revalidate, generateStaticParams, GET } =
     { url: '/hangouts', revision },
     { url: '/', revision },
   ],
+  // Aset OCR (puluhan MB) hanya diunduh saat halaman uji dipakai; jangan ikut precache di setiap perangkat.
+  globIgnores: ['**/node_modules/**/*', '**/ocr/**'],
   swSrc: 'src/app/sw.ts',
   useNativeEsbuild: true,
 });
