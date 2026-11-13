@@ -81,3 +81,5 @@ Desktop.ini
 # Generated files
 *.generated.*
 package-lock.json
+# Aset OCR untuk /lab/ocr (disalin atau diunduh oleh scripts/ocr-assets.mjs)
+/public/ocr/

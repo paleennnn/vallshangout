@@ -5,6 +5,7 @@ const isDevelopment = process.env.NODE_ENV === 'development';
 const scriptSource = [
   "'self'",
   "'unsafe-inline'",
+  "'wasm-unsafe-eval'", // OCR di browser (Tesseract.js dan PaddleOCR) memakai WebAssembly
   ...(isDevelopment ? ["'unsafe-eval'"] : []),
   'https://challenges.cloudflare.com',
 ].join(' ');
