@@ -499,4 +499,23 @@ describe('<RoomBills /> siapa yang mengelola tagihan', () => {
     setup({ me: host, isHost: true });
     expect(await screen.findByRole('button', { name: /Finalkan dan hitung transfer/ })).toBeTruthy();
   });
+
+  it('tombol Scan struk hanya untuk pengelola tagihan', async () => {
+    h.api.fetchBillsBundle.mockResolvedValue(bundle({ bills: [{ ...draft, paid_by: 'p-host' }], assignments: marked }));
+    const { unmount } = setup(); // Budi bukan host dan bukan pembayar
+    await screen.findByText('Steak');
+    expect(screen.queryByRole('button', { name: 'Scan struk' })).toBeNull();
+    unmount();
+
+    setup({ me: host, isHost: true });
+    expect(await screen.findByRole('button', { name: 'Scan struk' })).toBeTruthy();
+    expect(screen.getByText(/perlu dicek ulang dengan struk/)).toBeTruthy();
+  });
+
+  it('bill final tidak menampilkan Scan struk', async () => {
+    h.api.fetchBillsBundle.mockResolvedValue(bundle({ bills: [{ ...draft, status: 'final' }], assignments: marked }));
+    setup({ me: host, isHost: true });
+    fireEvent.click(await screen.findByRole('button', { name: /Makan malam/ }));
+    expect(screen.queryByRole('button', { name: 'Scan struk' })).toBeNull();
+  });
 });

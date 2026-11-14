@@ -166,6 +166,39 @@ export async function addItem(
   return check(res, 'Gagal menambah menu') as BillItemRow;
 }
 
+/** Menyimpan banyak menu sekaligus (satu permintaan, jadi semuanya masuk atau tidak sama sekali). */
+export async function addItems(
+  sb: SupabaseClient,
+  hangoutId: string,
+  billId: string,
+  inputs: NewItemInput[],
+  firstSortOrder: number,
+  existingCount = 0,
+): Promise<BillItemRow[]> {
+  if (inputs.length === 0) throw new Error('Tidak ada menu untuk disimpan.');
+  if (existingCount + inputs.length > MAX_ITEMS_PER_BILL) {
+    throw new Error(`Satu tagihan maksimal ${MAX_ITEMS_PER_BILL} menu (sekarang ${existingCount}, akan ditambah ${inputs.length}).`);
+  }
+  for (const [i, it] of inputs.entries()) {
+    const problem = validateItem(it);
+    if (problem) throw new Error(`Menu ke-${i + 1}: ${problem}`);
+  }
+  const res = await sb
+    .from('bill_items')
+    .insert(
+      inputs.map((it, i) => ({
+        hangout_id: hangoutId,
+        bill_id: billId,
+        name: it.name.trim(),
+        unit_price: it.unitPrice,
+        qty: it.qty,
+        sort_order: firstSortOrder + i,
+      })),
+    )
+    .select('id,bill_id,name,unit_price,qty,sort_order,created_at');
+  return (check(res, 'Gagal menyimpan menu') as BillItemRow[] | null) ?? [];
+}
+
 export async function updateItem(sb: SupabaseClient, itemId: string, input: NewItemInput): Promise<void> {
   const problem = validateItem(input);
   if (problem) throw new Error(problem);

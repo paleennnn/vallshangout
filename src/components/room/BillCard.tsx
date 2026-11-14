@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp, LockOpen, Plus } from 'lucide-react';
+import { ChevronDown, ChevronUp, Info, LockOpen, Plus, X } from 'lucide-react';
 import { useSupabase } from '@/components/SupabaseProvider';
 import { errorMessage } from '@/lib/errors';
 import { notifyRoom } from '@/lib/room/notify';
@@ -25,6 +25,7 @@ import {
 import type { AssignmentRow, BillItemRow, BillRow, BillShareRow, Participant } from '@/lib/supabase/types';
 import { BillChargesEditor } from './BillCharges';
 import { ItemForm, ItemRow } from './BillItems';
+import { ScanReceipt } from './ScanReceipt';
 import { dangerBtn, field, fieldLabel, primary, secondary } from './ui';
 
 interface ShareLine {
@@ -93,6 +94,7 @@ export function BillCard({
   const [adding, setAdding] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [shareRest, setShareRest] = useState(false);
+  const [scanNote, setScanNote] = useState<{ count: number; warning?: string } | null>(null);
   const [activeId, setActiveId] = useState<string | undefined>(me?.id);
 
   const nameOf = (id: string) => participants.find((p) => p.id === id)?.name ?? 'seseorang';
@@ -231,6 +233,34 @@ export function BillCard({
                     Tambah menu
                   </button>
                 ))}
+
+              {canManage && (
+                <ScanReceipt
+                  bill={bill}
+                  itemCount={items.length}
+                  nextSortOrder={items.reduce((m, it) => Math.max(m, it.sort_order), -1) + 1}
+                  onSaved={(count, warning) => {
+                    setScanNote({ count, warning });
+                    onChanged();
+                  }}
+                />
+              )}
+
+              {scanNote && (
+                <div role="status" className="flex items-start gap-3 rounded-xl border border-line bg-surface p-3 text-sm">
+                  <Info size={18} className="mt-0.5 shrink-0 text-brand-ink" aria-hidden="true" />
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <p>
+                      {scanNote.count} menu dari scan struk sudah ditambahkan. Pastikan semuanya sudah sesuai dengan struk, dan ubah
+                      atau hapus yang salah.
+                    </p>
+                    {scanNote.warning && <p className="text-warning">{scanNote.warning}</p>}
+                  </div>
+                  <button type="button" aria-label="Tutup info scan" className="grid h-8 w-8 shrink-0 place-items-center rounded-control text-muted hover:bg-sand" onClick={() => setScanNote(null)}>
+                    <X size={16} aria-hidden="true" />
+                  </button>
+                </div>
+              )}
             </>
           )}
 
