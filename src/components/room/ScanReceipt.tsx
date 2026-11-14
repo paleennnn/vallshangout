@@ -18,6 +18,21 @@ import { secondary } from './ui';
 /** Mesin yang dipakai fitur scan. PaddleOCR masih eksperimen di /lab/ocr. */
 const SCAN_ENGINE: EngineId = 'tesseract';
 
+export interface ScanReceiptProps {
+  /** Baris tagihan Supabase (bila dipanggil dari room / BillCard). */
+  bill?: BillRow;
+  itemCount: number;
+  nextSortOrder?: number;
+  /** Angka struk yang sudah ada (dipakai bila tanpa bill, mis. kalkulator). */
+  currentCharges?: ReviewCharges;
+  /** Tombol simpan khusus (dipakai bila tanpa bill, mis. kalkulator). */
+  onSave?: (items: NewItemInput[], charges: ReviewCharges) => Promise<void> | void;
+  /** `warning` terisi bila menu tersimpan tetapi angka service/pajak gagal disimpan. */
+  onSaved: (count: number, warning?: string) => void;
+  buttonClassName?: string;
+  submitLabel?: string;
+}
+
 /**
  * Tombol "Scan struk": foto diproses di HP (tidak diunggah), hasilnya ditinjau dan diedit di
  * lembar tinjau, baru disimpan sebagai menu dan angka struk tagihan ini.
@@ -25,15 +40,13 @@ const SCAN_ENGINE: EngineId = 'tesseract';
 export function ScanReceipt({
   bill,
   itemCount,
-  nextSortOrder,
+  nextSortOrder = 0,
+  currentCharges,
+  onSave,
   onSaved,
-}: {
-  bill: BillRow;
-  itemCount: number;
-  nextSortOrder: number;
-  /** `warning` terisi bila menu tersimpan tetapi angka service/pajak gagal disimpan. */
-  onSaved: (count: number, warning?: string) => void;
-}) {
+  buttonClassName,
+  submitLabel,
+}: ScanReceiptProps) {
   const { supabase } = useSupabase();
   const inputRef = useRef<HTMLInputElement>(null);
   const [reading, setReading] = useState(false);
@@ -65,36 +78,65 @@ export function ScanReceipt({
   }
 
   async function save(items: NewItemInput[], charges: ReviewCharges) {
-    if (!supabase) return;
-    setSaving(true);
-    setSaveError(null);
-    try {
-      await addItems(supabase, bill.hangout_id, bill.id, items, nextSortOrder, itemCount);
-    } catch (e) {
-      setSaveError(errorMessage(e, 'Gagal menyimpan menu'));
+    if (bill) {
+      if (!supabase) return;
+      setSaving(true);
+      setSaveError(null);
+      try {
+        await addItems(supabase, bill.hangout_id, bill.id, items, nextSortOrder, itemCount);
+      } catch (e) {
+        setSaveError(errorMessage(e, 'Gagal menyimpan menu'));
+        setSaving(false);
+        return;
+      }
+      // Menu sudah tersimpan: apa pun yang terjadi pada angka struk, lembar tinjau ditutup agar tidak menyimpan dua kali
+      let warning: string | undefined;
+      try {
+        await updateBill(supabase, bill.id, {
+          service_amount: charges.service,
+          tax_amount: charges.tax,
+          discount_amount: charges.discount,
+          rounding_amount: charges.rounding,
+        });
+      } catch {
+        warning = 'Angka service, pajak, diskon, dan pembulatan belum tersimpan. Isi lewat "Ubah service, pajak, diskon".';
+      }
       setSaving(false);
-      return;
+      setResult(null);
+      onSaved(items.length, warning);
+    } else if (onSave) {
+      setSaving(true);
+      setSaveError(null);
+      try {
+        await onSave(items, charges);
+      } catch (e) {
+        setSaveError(errorMessage(e, 'Gagal menyimpan menu'));
+        setSaving(false);
+        return;
+      }
+      setSaving(false);
+      setResult(null);
+      onSaved(items.length);
     }
-    // Menu sudah tersimpan: apa pun yang terjadi pada angka struk, lembar tinjau ditutup agar tidak menyimpan dua kali
-    let warning: string | undefined;
-    try {
-      await updateBill(supabase, bill.id, {
-        service_amount: charges.service,
-        tax_amount: charges.tax,
-        discount_amount: charges.discount,
-        rounding_amount: charges.rounding,
-      });
-    } catch {
-      warning = 'Angka service, pajak, diskon, dan pembulatan belum tersimpan. Isi lewat "Ubah service, pajak, diskon".';
-    }
-    setSaving(false);
-    setResult(null);
-    onSaved(items.length, warning);
   }
+
+  const effectiveCharges: ReviewCharges = bill
+    ? {
+        service: bill.service_amount,
+        tax: bill.tax_amount,
+        discount: bill.discount_amount,
+        rounding: bill.rounding_amount,
+      }
+    : (currentCharges ?? { service: 0, tax: 0, discount: 0, rounding: 0 });
 
   return (
     <div className="space-y-2">
-      <button type="button" className={`${secondary} w-full`} disabled={reading} onClick={() => inputRef.current?.click()}>
+      <button
+        type="button"
+        className={buttonClassName ?? `${secondary} w-full`}
+        disabled={reading}
+        onClick={() => inputRef.current?.click()}
+      >
         <ScanLine size={16} aria-hidden="true" />
         {reading ? 'Membaca struk…' : 'Scan struk'}
       </button>
@@ -118,9 +160,10 @@ export function ScanReceipt({
           <ScanReview
             result={result}
             existingCount={itemCount}
-            currentCharges={{ service: bill.service_amount, tax: bill.tax_amount, discount: bill.discount_amount, rounding: bill.rounding_amount }}
+            currentCharges={effectiveCharges}
             busy={saving}
             error={saveError}
+            submitLabel={submitLabel}
             onSave={save}
             onClose={() => setResult(null)}
           />

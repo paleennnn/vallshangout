@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Check, Copy, MapPin, Minus, Plus, Trash2, TriangleAlert, X } from 'lucide-react';
+import { ArrowRight, Check, Copy, Info, MapPin, Minus, Plus, Trash2, TriangleAlert, X } from 'lucide-react';
 import {
   SplitError,
   computeBillShares,
@@ -13,6 +13,7 @@ import {
 } from '@/lib/engine/split';
 import { balancesFromBills, settleUp, settlementMessage, type Transfer } from '@/lib/engine/settle';
 import { loadPlaces, type Place } from '@/lib/places/store';
+import { ScanReceipt } from '@/components/room/ScanReceipt';
 import { MoneyInput } from './MoneyInput';
 import { patchFromParams } from './params';
 import { ThankYouModal } from './ThankYouModal';
@@ -53,6 +54,7 @@ export function Calculator() {
   const [payInfo, setPayInfo] = useState('');
   const [copied, setCopied] = useState(false);
   const [showThankYouModal, setShowThankYouModal] = useState(false);
+  const [scanNote, setScanNote] = useState<{ count: number; warning?: string } | null>(null);
   const resetDialogRef = useRef<HTMLDialogElement>(null);
 
   function openResetModal() {
@@ -73,6 +75,7 @@ export function Calculator() {
 
   function confirmReset() {
     setState(emptyState);
+    setScanNote(null);
     closeResetModal();
   }
 
@@ -397,6 +400,57 @@ export function Calculator() {
           <Plus size={16} aria-hidden="true" />
           Tambah menu
         </button>
+
+        <ScanReceipt
+          itemCount={state.items.length}
+          currentCharges={{
+            service: state.serviceOverride ?? auto.serviceAmount,
+            tax: state.taxOverride ?? auto.taxAmount,
+            discount: state.discount,
+            rounding: state.rounding,
+          }}
+          onSave={(scannedItems, charges) => {
+            const newLines: Line[] = scannedItems.map((it) => ({
+              id: uid(),
+              name: it.name,
+              price: it.unitPrice,
+              qty: it.qty,
+              eaters: {},
+            }));
+            setState((s) => ({
+              ...s,
+              items: [...s.items, ...newLines],
+              serviceOverride: charges.service,
+              taxOverride: charges.tax,
+              discount: charges.discount,
+              rounding: charges.rounding,
+            }));
+          }}
+          onSaved={(count, warning) => {
+            setScanNote({ count, warning });
+          }}
+        />
+
+        {scanNote && (
+          <div role="status" className="flex items-start gap-3 rounded-xl border border-line bg-surface p-3 text-sm">
+            <Info size={18} className="mt-0.5 shrink-0 text-brand-ink" aria-hidden="true" />
+            <div className="min-w-0 flex-1 space-y-1">
+              <p>
+                {scanNote.count} menu dari scan struk sudah ditambahkan. Pastikan semuanya sudah sesuai dengan struk, dan ubah
+                atau hapus yang salah.
+              </p>
+              {scanNote.warning && <p className="text-warning">{scanNote.warning}</p>}
+            </div>
+            <button
+              type="button"
+              aria-label="Tutup info scan"
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-control text-muted hover:bg-sand"
+              onClick={() => setScanNote(null)}
+            >
+              <X size={16} aria-hidden="true" />
+            </button>
+          </div>
+        )}
         {state.items.length > 0 && (
           <p className="text-xs text-muted">Ketuk nama untuk menandai siapa yang makan; ketuk lagi untuk menambah porsi.</p>
         )}

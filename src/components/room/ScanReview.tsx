@@ -22,6 +22,7 @@ export function ScanReview({
   currentCharges,
   busy,
   error,
+  submitLabel = 'Simpan ke tagihan',
   onSave,
   onClose,
 }: {
@@ -32,6 +33,7 @@ export function ScanReview({
   currentCharges: ReviewCharges;
   busy: boolean;
   error: string | null;
+  submitLabel?: string;
   onSave: (items: NewItemInput[], charges: ReviewCharges) => Promise<void>;
   onClose: () => void;
 }) {
@@ -205,7 +207,7 @@ export function ScanReview({
         <button type="button" className={secondary} onClick={onClose} disabled={busy}>Batal</button>
         <button type="button" className={primary} onClick={save} disabled={busy}>
           <Check size={16} aria-hidden="true" />
-          {busy ? 'Menyimpan…' : 'Simpan ke tagihan'}
+          {busy ? 'Menyimpan…' : submitLabel}
         </button>
       </div>
     </div>
