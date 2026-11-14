@@ -189,7 +189,8 @@ describe('<ScanReceipt />', () => {
     await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
     expect(onSaved.mock.calls[0][0]).toBe(3);
     expect(onSaved.mock.calls[0][1]).toMatch(/Ubah service, pajak, diskon/);
-    expect(screen.queryByText('Cek ulang hasil scan dengan struk')).toBeNull();
+    // onSaved dipanggil sesaat sebelum React selesai memperbarui DOM, jadi tunggu lembar benar-benar hilang
+    await waitFor(() => expect(screen.queryByText('Cek ulang hasil scan dengan struk')).toBeNull());
   });
 
   it('tidak ada menu terbaca: pesan bantuan, tanpa lembar tinjau', async () => {
