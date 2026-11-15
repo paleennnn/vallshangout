@@ -29,10 +29,11 @@ const pick = (name = 'struk.jpg') =>
   fireEvent.change(screen.getByLabelText('Pilih foto dari galeri'), { target: { files: [new File(['x'], name, { type: 'image/jpeg' })] } });
 
 describe('<OcrLab />', () => {
-  it('awalnya: Tesseract terpilih, PaddleOCR tidak, dan tombol jalan nonaktif sampai ada foto', () => {
+  it('awalnya: mesin Tesseract disebut, dan tombol jalan nonaktif sampai ada foto', () => {
     render(<OcrLab />);
-    expect((screen.getByRole('checkbox', { name: /Tesseract/ }) as HTMLInputElement).checked).toBe(true);
-    expect((screen.getByRole('checkbox', { name: /PaddleOCR/ }) as HTMLInputElement).checked).toBe(false);
+    expect(screen.getByText(/Tesseract\.js \(bahasa Indonesia\)/)).toBeTruthy();
+    expect(screen.queryByText(/PaddleOCR/)).toBeNull();
+    expect(screen.queryByRole('checkbox', { name: /Tesseract|Paddle/ })).toBeNull();
     expect((screen.getByRole('button', { name: 'Jalankan OCR' }) as HTMLButtonElement).disabled).toBe(true);
     pick();
     expect((screen.getByRole('button', { name: 'Jalankan OCR' }) as HTMLButtonElement).disabled).toBe(false);
@@ -73,19 +74,15 @@ describe('<OcrLab />', () => {
     expect(screen.getByText(/Peringatan \(\d+\)/)).toBeTruthy();
   });
 
-  it('satu mesin gagal tidak menghentikan mesin lain, galatnya tampil apa adanya', async () => {
-    h.run.mockImplementation(async (id: string) => {
-      if (id === 'paddle') throw new Error('failed to load model: 404');
-      return output('resto_clean');
-    });
+  it('mesin gagal dimuat: galatnya tampil apa adanya dan tombol bisa dipakai lagi', async () => {
+    h.run.mockRejectedValue(new Error('Failed to fetch /ocr/tesseract/core/tesseract-core-lstm.wasm.js'));
     render(<OcrLab />);
     pick();
-    fireEvent.click(screen.getByRole('checkbox', { name: /PaddleOCR/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Jalankan OCR' }));
 
-    expect(await screen.findByText(/Hasil terbaca \(4 menu\)/)).toBeTruthy();
-    expect((await screen.findByRole('alert')).textContent).toMatch(/failed to load model: 404/);
-    expect(h.run).toHaveBeenCalledTimes(2);
+    expect((await screen.findByRole('alert')).textContent).toMatch(/Gagal: Failed to fetch \/ocr\/tesseract\/core/);
+    expect(h.run).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Jalankan OCR' }) as HTMLButtonElement).disabled).toBe(false));
   });
 
   it('foto tidak bisa dibuka: galat penyiapan ditampilkan', async () => {

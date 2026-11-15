@@ -2,7 +2,7 @@ import { parseReceipt } from './parse';
 import { groupRows } from './rows';
 import type { OcrRow, OcrWord, ParsedReceipt } from './types';
 
-export type EngineId = 'tesseract' | 'paddle';
+export type EngineId = 'tesseract';
 
 /** Hasil mentah sebuah mesin OCR: kata beserta kotaknya dan waktu prosesnya. */
 export interface EngineOutput {

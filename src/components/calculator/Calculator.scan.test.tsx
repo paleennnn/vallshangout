@@ -14,6 +14,7 @@ vi.mock('@/lib/ocr/engines', async (orig) => ({ ...(await orig<typeof import('@/
 vi.mock('@/lib/ocr/preprocess', async (orig) => ({ ...(await orig<typeof import('@/lib/ocr/preprocess')>()), prepareCanvas: h.prepare }));
 
 const fx = (name: string): OcrWord[] => (fixtures as Record<string, { words: OcrWord[] }>)[name].words;
+const plain = (t: string | null) => (t ?? '').replace(/\u00a0/g, ' ');
 const out = (words: OcrWord[]) => ({ text: '', words, loadMs: 0, recognizeMs: 10 });
 
 const scan = (name = 'struk.jpg') =>
@@ -89,6 +90,22 @@ describe('<Calculator /> scan struk', () => {
     // Notifikasi scan dapat ditutup
     fireEvent.click(screen.getByRole('button', { name: 'Tutup info scan' }));
     expect(screen.queryByText(/3 menu dari scan struk sudah ditambahkan/)).toBeNull();
+  });
+
+  it('struk tanpa baris service dan pajak: yang disimpan persis yang dicocokkan di lembar tinjau, bukan persen bawaan kalkulator', async () => {
+    h.run.mockResolvedValue(out(fx('mart_clean'))); // struk minimarket: total 30.500, tanpa service dan pajak
+    render(<Calculator />);
+    scan();
+    await screen.findByText('Cek ulang hasil scan dengan struk');
+    expect(plain(screen.getByRole('status').textContent)).toMatch(/Cocok: hitungan Rp 30.500/);
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan ke tagihan' }));
+    await waitFor(() => expect(screen.queryByText('Cek ulang hasil scan dengan struk')).toBeNull());
+
+    // Service dan pajak terkunci di 0 seperti yang tampil di lembar tinjau; persen bawaan (5% dan 10%)
+    // tidak diam-diam diterapkan lagi setelah pengguna memverifikasi totalnya
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null');
+    expect(saved.serviceOverride).toBe(0);
+    expect(saved.taxOverride).toBe(0);
   });
 
   it('menu hasil scan dapat langsung ditandai siapa yang makan bila orang sudah ditambahkan', async () => {

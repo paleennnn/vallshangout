@@ -15,7 +15,7 @@ import type { BillRow } from '@/lib/supabase/types';
 import { ScanReview } from './ScanReview';
 import { secondary } from './ui';
 
-/** Mesin yang dipakai fitur scan. PaddleOCR masih eksperimen di /lab/ocr. */
+/** Mesin yang dipakai fitur scan. */
 const SCAN_ENGINE: EngineId = 'tesseract';
 
 export interface ScanReceiptProps {

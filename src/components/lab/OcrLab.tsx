@@ -132,7 +132,6 @@ function RunCard({ run }: { run: Run }) {
 export function OcrLab() {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [selected, setSelected] = useState<Record<EngineId, boolean>>({ tesseract: true, paddle: false });
   const [prep, setPrep] = useState<PrepOptions>(DEFAULT_PREP);
   const [status, setStatus] = useState<string | null>(null);
   const [runs, setRuns] = useState<Run[]>([]);
@@ -144,24 +143,22 @@ export function OcrLab() {
     };
   }, [previewUrl]);
 
-  const chosen = ENGINES.filter((e) => selected[e.id]);
+  const engine = ENGINES[0];
 
   async function start() {
-    if (!file || chosen.length === 0) return;
+    if (!file) return;
     setRuns([]);
     setCopied(false);
     try {
       setStatus('Menyiapkan foto...');
       const canvas = await prepareCanvas(file, prep);
       canvas.toBlob((blob) => blob && setPreviewUrl(URL.createObjectURL(blob)), 'image/jpeg', 0.8);
-      for (const e of chosen) {
-        setStatus(`Menjalankan ${e.label}... (pertama kali bisa lama karena model diunduh)`);
-        try {
-          const output = await runEngine(e.id, canvas);
-          setRuns((r) => [...r, { engine: e.id, label: e.label, output, analysis: analyzeWords(output.words) }]);
-        } catch (err) {
-          setRuns((r) => [...r, { engine: e.id, label: e.label, error: err instanceof Error ? err.message : String(err) }]);
-        }
+      setStatus(`Menjalankan ${engine.label}... (pertama kali bisa lama karena model diunduh)`);
+      try {
+        const output = await runEngine(engine.id, canvas);
+        setRuns([{ engine: engine.id, label: engine.label, output, analysis: analyzeWords(output.words) }]);
+      } catch (err) {
+        setRuns([{ engine: engine.id, label: engine.label, error: err instanceof Error ? err.message : String(err) }]);
       }
     } catch (err) {
       setRuns([{ engine: 'tesseract', label: 'Menyiapkan foto', error: err instanceof Error ? err.message : String(err) }]);
@@ -225,18 +222,9 @@ export function OcrLab() {
       </section>
 
       <section className={box}>
-        <fieldset className="space-y-2">
-          <legend className="font-medium">Mesin OCR</legend>
-          {ENGINES.map((e) => (
-            <label key={e.id} className="flex items-start gap-3 text-sm">
-              <input type="checkbox" checked={selected[e.id]} onChange={(ev) => setSelected((s) => ({ ...s, [e.id]: ev.target.checked }))} className="mt-0.5 h-5 w-5 shrink-0 accent-brand" />
-              <span>
-                <span className="font-medium">{e.label}</span>
-                <span className="block text-muted">{e.note}</span>
-              </span>
-            </label>
-          ))}
-        </fieldset>
+        <p className="text-sm text-muted">
+          Mesin: <span className="font-medium text-ink">{engine.label}</span>. {engine.note}
+        </p>
         <label className="flex items-start gap-3 text-sm">
           <input type="checkbox" checked={prep.enhance} onChange={(e) => setPrep((p) => ({ ...p, enhance: e.target.checked }))} className="mt-0.5 h-5 w-5 shrink-0 accent-brand" />
           <span>
@@ -252,7 +240,7 @@ export function OcrLab() {
             <option value={2000}>2000 px (lambat, mungkin lebih jelas)</option>
           </select>
         </label>
-        <button type="button" className={`${primary} w-full`} disabled={!file || chosen.length === 0 || status !== null} onClick={start}>
+        <button type="button" className={`${primary} w-full`} disabled={!file || status !== null} onClick={start}>
           Jalankan OCR
         </button>
         <p aria-live="polite" className="text-sm text-muted">{status}</p>
