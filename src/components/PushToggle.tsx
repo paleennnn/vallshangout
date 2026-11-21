@@ -28,6 +28,8 @@ export function PushToggle() {
   const { supabase, ensureSession } = useSupabase();
   const [state, setState] = useState<State>('checking');
   const [message, setMessage] = useState<string | null>(null);
+  /** Saklar "pengumuman" perangkat ini; null = belum diketahui. */
+  const [announce, setAnnounce] = useState<boolean | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -46,6 +48,36 @@ export function PushToggle() {
       active = false;
     };
   }, []);
+
+  // Saat notifikasi menyala, baca saklar pengumuman milik perangkat ini
+  useEffect(() => {
+    if (state !== 'on' || !supabase) return;
+    let active = true;
+    (async () => {
+      const reg = await navigator.serviceWorker.getRegistration();
+      const sub = await reg?.pushManager.getSubscription();
+      if (!sub) return;
+      const { data } = await supabase.from('push_subscriptions').select('announcements').eq('endpoint', sub.endpoint).maybeSingle();
+      if (active) setAnnounce(data ? Boolean(data.announcements) : null);
+    })();
+    return () => {
+      active = false;
+    };
+  }, [state, supabase]);
+
+  async function toggleAnnounce(next: boolean) {
+    setMessage(null);
+    setAnnounce(next);
+    const reg = await navigator.serviceWorker.getRegistration();
+    const sub = await reg?.pushManager.getSubscription();
+    const { error } = sub
+      ? await supabase!.from('push_subscriptions').update({ announcements: next }).eq('endpoint', sub.endpoint)
+      : { error: new Error('no subscription') };
+    if (error) {
+      setAnnounce(!next);
+      setMessage('Gagal menyimpan pengaturan pengumuman.');
+    }
+  }
 
   async function enable() {
     setMessage(null);
@@ -89,6 +121,7 @@ export function PushToggle() {
         await supabase?.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
         await sub.unsubscribe();
       }
+      setAnnounce(null);
       setState('off');
     } catch (e) {
       setMessage(e instanceof Error ? e.message : 'Gagal mematikan notifikasi');
@@ -125,6 +158,20 @@ export function PushToggle() {
           <BellOff size={16} aria-hidden="true" />
           Matikan notifikasi
         </button>
+      )}
+      {state === 'on' && announce !== null && (
+        <label className="flex basis-full items-start gap-3 text-sm">
+          <input
+            type="checkbox"
+            checked={announce}
+            onChange={(e) => toggleAnnounce(e.target.checked)}
+            className="mt-0.5 h-5 w-5 shrink-0 accent-brand"
+          />
+          <span>
+            <span className="font-medium">Terima pengumuman dari Valls</span>
+            <span className="block text-muted">Kabar sesekali dari tim Valls. Notifikasi tagihan dan transfer tetap aktif.</span>
+          </span>
+        </label>
       )}
       {(state === 'busy' || state === 'checking') && (
         <span className="inline-flex h-11 items-center px-1 text-sm text-muted">Memeriksa…</span>

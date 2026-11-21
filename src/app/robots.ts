@@ -14,6 +14,7 @@ export default function robots(): MetadataRoute.Robots {
           '/new',
           '/hangouts',
           '/lab/',
+          '/admin',
           '/~offline',
           '/serwist/',
         ],
